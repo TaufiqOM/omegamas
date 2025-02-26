@@ -4,7 +4,22 @@ from datetime import datetime, timedelta
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    name = fields.Char(string="Reference", readonly=False, default="Draft")  # Bisa diedit, default "Draft"
+    name = fields.Char(string="Reference", default="Draft")  # Bisa diedit, default "Draft"
+
+    @api.model
+    def create(self, vals):
+        if not vals.get('name') or vals.get('name') == 'Draft':
+            vals['name'] = self._generate_draft_name()
+        return super(StockPicking, self).create(vals)
+
+    def _generate_draft_name(self):
+        """ Generate nama Draft unik jika sudah ada "Draft - 1", maka menjadi "Draft - 2", dst. """
+        existing_drafts = self.search([('name', '=like', 'Draft - %')], order='name desc', limit=1)
+        if existing_drafts:
+            last_number = existing_drafts.name.replace('Draft - ', '').strip()
+            new_number = int(last_number) + 1 if last_number.isdigit() else 1
+            return f"Draft - {new_number}"
+        return "Draft - 1"
 
     @api.model
     def _generate_sequence_number(self, schedule_date):

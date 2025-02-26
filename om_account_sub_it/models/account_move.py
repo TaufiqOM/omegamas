@@ -54,13 +54,13 @@ class AccountMoveInherit(models.Model):
                 now_utc7 = datetime.utcnow() + timedelta(hours=7)  # Waktu sekarang dalam UTC+7
                 vals['date'] = now_utc7.date()  # Simpan hanya tanggal
 
-            # Set nilai name jika belum diisi
-            if 'name' not in vals or vals.get('name') == '/':
-                date = vals.get('date', fields.Date.today())  # Pakai date dari scheduled_date atau hari ini
-                formatted_number = self._get_next_sequence(date)  # Ambil nomor unik
-                year = date.strftime('%y')
-                month = date.strftime('%m')
-                vals['name'] = f"STJ/PBP {year}/{month}/{formatted_number}"
+            # # Set nilai name jika belum diisi
+            # if 'name' not in vals or vals.get('name') == '/':
+            #     date = vals.get('date', fields.Date.today())  # Pakai date dari scheduled_date atau hari ini
+            #     formatted_number = self._get_next_sequence(date)  # Ambil nomor unik
+            #     year = date.strftime('%y')
+            #     month = date.strftime('%m')
+            #     vals['name'] = f"STJ/PBP {year}/{month}/{formatted_number}"
 
         records = super().create(vals_list)
         return records

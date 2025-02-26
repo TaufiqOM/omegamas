@@ -10,8 +10,17 @@ class PurchaseOrder(models.Model):
     @api.model
     def create(self, vals):
         if not vals.get('name') or vals.get('name') == '/':
-            vals['name'] = "Draft"
+            vals['name'] = self._generate_draft_name()
         return super(PurchaseOrder, self).create(vals)
+
+    def _generate_draft_name(self):
+        """ Generate nama Draft unik jika sudah ada "Draft - 1", maka menjadi "Draft - 2", dst. """
+        existing_drafts = self.search([('name', '=like', 'Draft - %')], order='name desc', limit=1)
+        if existing_drafts:
+            last_number = existing_drafts.name.replace('Draft - ', '').strip()
+            new_number = int(last_number) + 1 if last_number.isdigit() else 1
+            return f"Draft - {new_number}"
+        return "Draft - 1"
 
     def button_confirm(self):
         res = super(PurchaseOrder, self).button_confirm()
@@ -21,7 +30,7 @@ class PurchaseOrder(models.Model):
             
             # Update nomor PO saat konfirmasi
             order._update_po_number()
-            
+        
         return res
 
     def write(self, vals):
