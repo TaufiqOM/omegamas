@@ -3,22 +3,13 @@ from odoo import models, fields, api, _
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
-    move_id = fields.Many2one('stock.move', string="Stock Move", compute="_compute_testing")
+    product_id = fields.Many2one('product.product', string="Product", compute="_compute_product")
 
     @api.depends('move_ids')
-    def _compute_testing(self):
+    def _compute_product(self):
         for record in self:
             if record.move_ids:
-                stock_move = self.env['stock.move'].search([('account_id', '=', record.move_ids[0].id)], limit=1)
-                if stock_move:
-                    record.move_id = stock_move.id
-                else:
-                    record.move_id = False
+                stock_move = record.move_ids[0]  # Ambil move pertama
+                record.product_id = stock_move.product_id.id
             else:
-                record.move_id = False
-
-
-class StockMove(models.Model):
-    _inherit = 'stock.move'
-
-    account_id = fields.Many2one('account.account', string="Account")
+                record.product_id = False
