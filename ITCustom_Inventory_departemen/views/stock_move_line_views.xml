@@ -1,23 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="view_stock_move_tree_inherit" model="ir.ui.view">
-        <field name="name">stock.move.tree.inherit</field>
-        <field name="model">stock.move</field>
-        <field name="inherit_id" ref="stock.view_move_tree"/>
+    <record id="inherit_view_id_inherit_account" model="ir.ui.view">
+        <field name="name">account.move.view.form.inherit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
-                <field name="department_id" string="Department"/>
+            <!-- Menambahkan kolom baru "Testing" ke invoice_line_ids -->
+            <xpath expr="//notebook/page[@name='invoice_tab']/field[@name='invoice_line_ids']/list" position="inside">
+                 <field name="move_id" string="Testing"/>
             </xpath>
-        </field>
-    </record>
 
-    <record id="view_stock_move_form_inherit" model="ir.ui.view">
-        <field name="name">stock.move.form.inherit</field>
-        <field name="model">stock.move</field>
-        <field name="inherit_id" ref="stock.view_move_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//group" position="inside">
-                <field name="department_id" string="Department"/>
+            <!-- Menambahkan kolom baru "move_id" ke line_ids -->
+            <xpath expr="//notebook/page[@name='aml_tab']/field[@name='line_ids']/list" position="inside">
+                 <field name="move_id" string="Testing"/>
             </xpath>
         </field>
     </record>

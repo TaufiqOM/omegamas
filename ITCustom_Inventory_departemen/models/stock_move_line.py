@@ -1,14 +1,24 @@
-from odoo import fields, models, api
+from odoo import models, fields, api, _
+
+class StockPicking(models.Model):
+    _inherit = 'stock.picking'
+
+    move_id = fields.Many2one('stock.move', string="Stock Move", compute="_compute_testing")
+
+    @api.depends('move_ids')
+    def _compute_testing(self):
+        for record in self:
+            if record.move_ids:
+                stock_move = self.env['stock.move'].search([('account_id', '=', record.move_ids[0].id)], limit=1)
+                if stock_move:
+                    record.move_id = stock_move.id
+                else:
+                    record.move_id = False
+            else:
+                record.move_id = False
+
 
 class StockMove(models.Model):
-    _inherit = "stock.move"
+    _inherit = 'stock.move'
 
-    department_id = fields.Many2one('hr.department', string="Department", compute="_compute_department_id", store=True)
-
-    @api.depends('purchase_line_id')
-    def _compute_department_id(self):
-        for move in self:
-            if move.purchase_line_id:
-                move.department_id = move.purchase_line_id.department_id
-            else:
-                move.department_id = False
+    account_id = fields.Many2one('account.account', string="Account")
