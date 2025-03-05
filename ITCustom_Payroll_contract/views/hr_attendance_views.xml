@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_hr_attendance_form_inherit" model="ir.ui.view">
+        <field name="name">hr.attendance.form.inherit</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Tempatkan field x_studio_terlambat_1 di bawah field check_in -->
+            <xpath expr="//field[@name='check_in']" position="after">
+                <field name="terlambat"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_hr_attendance_form" model="ir.ui.view">
+        <field name="name">hr.attendance.form.inherit</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='check_in']" position="after">
+                <field name="insentif"/>
+                <field name="status_insentif"/>
+                <field name="catatan"/>
+            </xpath>
+        </field>
+    </record>
+    
+</odoo>
