@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <!-- Tempatkan field x_studio_terlambat_1 di bawah field check_in -->
             <xpath expr="//field[@name='check_in']" position="after">
-                <field name="terlambat"/>
+                <field name="terlambat_detik"/>
             </xpath>
         </field>
     </record>
