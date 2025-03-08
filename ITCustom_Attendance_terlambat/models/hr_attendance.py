@@ -12,6 +12,12 @@ class HrAttendance(models.Model):
         store=True
     )
 
+    hari = fields.Char(
+        string="Hari (WIB)",
+        compute="_compute_hari",
+        store=True
+    )
+
     day_code = fields.Integer(
         string='Day Code',
         compute='_compute_day_code',
@@ -277,3 +283,31 @@ class HrAttendance(models.Model):
     def compute_old_data(self):
         records = self.search([])
         records._compute_absen()
+
+    @api.depends('check_in')
+    def _compute_hari(self):
+        days = {
+            0: 'Senin', 1: 'Selasa', 2: 'Rabu',
+            3: 'Kamis', 4: 'Jum’at', 5: 'Sabtu', 6: 'Minggu'
+        }
+        for record in self:
+            if record.check_in:
+                check_in = record.check_in
+
+                # Konversi Manual UTC ke WIB (Tambahkan 7 jam)
+                jam_baru = check_in.hour + 7
+                hari_baru = check_in.weekday()
+
+                # Jika melebihi 24 jam, geser ke hari berikutnya
+                if jam_baru >= 24:
+                    jam_baru -= 24  # Sesuaikan kembali dalam 0-23 jam
+                    hari_baru += 1  # Geser ke hari berikutnya
+
+                    # Jika hari_baru melebihi 6 (Minggu), kembali ke 0 (Senin)
+                    if hari_baru > 6:
+                        hari_baru = 0
+
+                # Set hasil hari dalam WIB
+                record.hari = days[hari_baru]
+            else:
+                record.hari = ''
