@@ -5,13 +5,9 @@
         <field name="model">hr.attendance</field>
         <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='check_in']" position="after">
-                <field name="work_from_display"/>
-                <field name="work_to_display"/>
-                <field name="terlambat_display"/>
-                <field name="pulang_dini_display"/>
-                <field name="terlambat_count"/>
-                <field name="pulang_dini_count"/>
+            <!-- Tempatkan field x_studio_terlambat_1 di bawah field check_in -->
+            <xpath expr="//field[@name='check_out']" position="after">
+                <field name="presensi"/>
             </xpath>
         </field>
     </record>
