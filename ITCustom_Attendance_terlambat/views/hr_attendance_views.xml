@@ -12,6 +12,7 @@
                 <field name="pulang_dini_display"/>
                 <field name="terlambat_count"/>
                 <field name="pulang_dini_count"/>
+                <field name="presensi"/>
             </xpath>
         </field>
     </record>
