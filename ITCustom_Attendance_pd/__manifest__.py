@@ -8,7 +8,6 @@
     'summary': 'Menambahkan menu All Report di Attendance',
     'data': [
         'views/hr_attendance_menu.xml',
-        'security/ir.model.access.csv',
     ],
     'installable': True,
     'application': False,

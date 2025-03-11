@@ -6,15 +6,113 @@
         <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='check_in']" position="after">
-                <field name="work_from_display"/>
-                <field name="work_to_display"/>
-                <field name="terlambat_display"/>
-                <field name="pulang_dini_display"/>
+                <field name="calendar_id" invisible="1"/>
+                <field name="day_code" invisible="1"/>
+                <field name="work_from" invisible="1"/>
+                <field name="hari" />
+                <field name="work_from_display" />
                 <field name="terlambat_count"/>
+                <field name="terlambat_display"/>
+                <field name="alasan_terlambat"/>
+            </xpath>
+            <xpath expr="//field[@name='check_out']" position="after">
+                <field name="work_to" invisible="1"/>
+                <field name="pulang_dini" invisible="1"/>
+                <field name="valid" invisible="1"/>
+                <field name="terlambat" invisible="1"/>
+                <field name="work_to_display" />
                 <field name="pulang_dini_count"/>
-                <field name="presensi"/>
+                <field name="pulang_dini_display"/>
+                <field name="alasan_pulang_dini"/>
+            </xpath>
+            <xpath expr="//field[@name='worked_hours']" position="before">
+                <div class="o_row">
+                    <label for="presensi" string="Presensi"/>
+                    <field name="presensi"/>
+                    <label for="lembur" string="Lembur"/>
+                    <field name="lembur"/>
+                    <label for="insentif" string="Insentif"/>
+                    <field name="insentif"/>
+                </div>
+                <field name="status_insentif"/>
+                <field name="catatan_insentif"/>
+                <field name="kategori_selection"/>
+                <field name="durasi" invisible="not (kategori_selection in ['MP', 'MSH'])"/>
+                <field name="durasi_menit" invisible="1"/>
+                <field name="msh_count" invisible="1"/>
+                <field name="mp_count" invisible="1"/>
             </xpath>
         </field>
     </record>
-    
+    <!-- Inherit the attendance pivot view to add presensi and related fields, and hide default fields -->
+    <record id="view_attendance_pivot_inherit_presensi" model="ir.ui.view">
+        <field name="name">hr.attendance.pivot.inherit.presensi</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_pivot"/>
+        <field name="arch" type="xml">
+            <xpath expr="//pivot" position="inside">
+                <field name="presensi" string="Presensi" type="measure"/>
+                <field name="insentif" string="Insentif" type="measure"/>
+                <field name="terlambat_count" string="Terlambat" type="measure"/>
+                <field name="pulang_dini_count" string="Pulang Dini" type="measure"/>
+                <field name="msh_count" string="MSH" type="measure"/>
+                <field name="mp_count" string="MP" type="measure"/>
+            </xpath>
+            <xpath expr="//field[@name='employee_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='check_in']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='worked_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='expected_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='overtime_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='validated_overtime_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+    <!-- Inherit the attendance pivot view to add presensi and hide default fields -->
+    <record id="view_attendance_pivot_inherit_presensi" model="ir.ui.view">
+        <field name="name">hr.attendance.pivot.inherit.presensi</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_pivot"/>
+        <field name="arch" type="xml">
+            <xpath expr="//pivot" position="inside">
+                <field name="insentif" string="Insentif" type="measure"/>
+                <field name="terlambat_count" string="Terlambat" type="measure"/>
+                <field name="pulang_dini_count" string="Pulang Dini" type="measure"/>
+                <field name="msh_count" string="MSH" type="measure"/>
+                <field name="mp_count" string="MP" type="measure"/>
+            </xpath>
+            <xpath expr="//field[@name='employee_id']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='check_in']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='worked_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='expected_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='overtime_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='validated_overtime_hours']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+    <!-- Update action to remove default grouping -->
+    <record id="hr_attendance.hr_attendance_action" model="ir.actions.act_window">
+        <field name="context">{"group_by": ["employee_id"]}</field>
+    </record>
 </odoo>
