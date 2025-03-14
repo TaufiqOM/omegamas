@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_hr_payslip_tree_inherit" model="ir.ui.view">
+        <field name="name">hr.payslip.tree.inherit</field>
+        <field name="model">hr.payslip</field>
+        <field name="inherit_id" ref="hr_payroll.view_hr_payslip_tree"/>
+        <field name="arch" type="xml">
+            <!-- Tambahkan field nomor_karyawan di dalam list view -->
+            <xpath expr="//field[@name='employee_id']" position="before">
+                <field name="nomor_karyawan" string="Nomor Karyawan" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Define custom pivot view -->
+    <record id="view_hr_attendance_pivot" model="ir.ui.view">
+        <field name="name">hr.attendance.pivot</field>
+        <field name="model">hr.attendance</field>
+        <field name="arch" type="xml">
+            <pivot string="Attendances">
+                <field name="employee_id" type="row"/>
+                <field name="check_in" type="col" interval="day"/>
+                <field name="check_out" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Attach pivot view to the action -->
+    <record id="hr_attendance_action_pivot_view" model="ir.actions.act_window.view">
+        <field name="act_window_id" ref="hr_attendance.hr_attendance_action"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="view_hr_attendance_pivot"/>
+        <field name="sequence" eval="50"/>
+    </record>
+</odoo>

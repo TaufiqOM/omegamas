@@ -17,28 +17,23 @@ def generate_durasi_selection():
 class HrAttendance(models.Model):
     _inherit = 'hr.attendance'
 
-    original_calendar_id = fields.Many2one(
-        comodel_name='resource.calendar',
-        string='Original Working Schedule',
-        readonly=True,  # Field ini hanya bisa diisi sekali dan tidak bisa diubah lagi
-        store=True
-    )
-
     calendar_id = fields.Many2one(
         comodel_name='resource.calendar',
         string='Working Schedule',
-        compute='_compute_calendar_id',
+        related='employee_id.resource_calendar_id',
         store=True
     )
 
     hari = fields.Char(
         string="Hari",
-        compute="_compute_hari"
+        compute="_compute_hari",
+        store=True
     )
 
     day_code = fields.Integer(
         string='Day Code',
-        compute='_compute_day_code'
+        compute='_compute_day_code',
+        store=True
     )
     
     work_from = fields.Float(
@@ -51,7 +46,6 @@ class HrAttendance(models.Model):
         string='Mulai Kerja',
         compute='_compute_work_from_display'
     )
-    
     work_to = fields.Float(
         string='Work To Float',
         compute='_compute_work_to',
@@ -79,11 +73,7 @@ class HrAttendance(models.Model):
         compute='_compute_pulang_dini_count',
         store=True
     )
-    
-    alasan_pulang_dini = fields.Text(
-        string="Alasan Pulang Dini",
-        store=True
-    )
+    alasan_pulang_dini = fields.Text(string="Alasan Pulang Dini")
 
     presensi = fields.Integer(
         string='Presensi',
@@ -92,21 +82,22 @@ class HrAttendance(models.Model):
         store=True
     )
 
+    lembur = fields.Integer(
+        string='Lembur',
+        compute='_compute_lembur',
+        default=0,
+        store=True
+    )
+
     valid = fields.Integer(
-        string='Valid In',
+        string='Valid',
         compute='_compute_valid',
         store=True,
         default=1
     )
     
-    valid_out = fields.Integer(
-        string='Valid Out',
-        compute='_compute_valid_out',
-        store=True,
-    )
-    
     terlambat = fields.Integer(
-        string='Terlambat (Integer)',
+        string='Terlambat',
         compute='_compute_terlambat',
         store=True
     )
@@ -121,7 +112,6 @@ class HrAttendance(models.Model):
         compute='_compute_terlambat_count',
         store=True
     )
-    
     alasan_terlambat = fields.Text(
         string="Alasan Terlambat",
         store=True
@@ -130,12 +120,6 @@ class HrAttendance(models.Model):
     insentif = fields.Integer(
         string="Insentif", 
         compute="_compute_insentif", 
-        store=True
-    )
-    
-    lembur = fields.Integer(
-        string="Lembur", 
-        compute="_compute_lembur", 
         store=True
     )
 
@@ -186,44 +170,6 @@ class HrAttendance(models.Model):
         compute='_compute_counts', 
         store=True
     )
-    
-    employee_type = fields.Selection(
-    related='employee_id.employee_type',
-    string='Employee Type',
-    )
-    
-    @api.depends('original_calendar_id')
-    def _compute_calendar_id(self):
-        """
-        Compute calendar_id berdasarkan original_calendar_id.
-        Jika original_calendar_id sudah ada, gunakan nilai tersebut.
-        Jika belum ada, gunakan resource_calendar_id dari employee.
-        """
-        for record in self:
-            if record.original_calendar_id:
-                # Gunakan original_calendar_id jika sudah ada
-                record.calendar_id = record.original_calendar_id
-            else:
-                # Jika belum ada, gunakan resource_calendar_id dari employee
-                record.calendar_id = record.employee_id.resource_calendar_id
-
-    @api.model
-    def create(self, vals):
-        """
-        Saat record baru dibuat, isi original_calendar_id dengan resource_calendar_id dari employee.
-        """
-        if 'employee_id' in vals:
-            employee = self.env['hr.employee'].browse(vals['employee_id'])
-            vals['original_calendar_id'] = employee.resource_calendar_id.id
-        return super(HrAttendance, self).create(vals)
-
-    def write(self, vals):
-        """
-        Pastikan original_calendar_id tidak diubah setelah record dibuat.
-        """
-        if 'original_calendar_id' in vals:
-            del vals['original_calendar_id']  # Hapus nilai original_calendar_id dari vals
-        return super(HrAttendance, self).write(vals)
 
     @api.depends('check_in')
     def _compute_day_code(self):
@@ -292,16 +238,16 @@ class HrAttendance(models.Model):
                             record.valid = 0
                             break
                         
-    @api.depends('check_in', 'work_from', 'valid')
+    @api.depends('check_in', 'work_from', 'valid', 'presensi')
     def _compute_terlambat(self):
         for record in self:
             # Jika valid = 0, langsung set terlambat = 0
             if record.valid == 0:
                 record.terlambat = 0
                 continue
-
-            # Jika valid = 1, lakukan perhitungan keterlambatan
-            if record.check_in and record.work_from:
+            
+            # Jika valid = 1 dan presensi = 1, lakukan perhitungan keterlambatan
+            if record.presensi == 1 and record.check_in and record.work_from:
                 wib_timezone = dateutil.tz.gettz('Asia/Jakarta')
                 check_in_date = record.check_in.astimezone(wib_timezone)
                 work_from_hours = int(record.work_from)
@@ -315,7 +261,6 @@ class HrAttendance(models.Model):
                     record.terlambat = 0
             else:
                 record.terlambat = 0
-
 
     @api.depends('terlambat')
     def _compute_terlambat_display(self):
@@ -361,11 +306,15 @@ class HrAttendance(models.Model):
                 # Cek apakah hari tersebut adalah hari kerja (Senin - Jumat)
                 is_weekday = check_in_date.weekday() < 5
 
-                # Cek apakah tanggal tersebut adalah hari libur berdasarkan calendar_id dan tanggal
-                is_holiday = any(
-                    leave.date_from.date() <= check_in_date <= leave.date_to.date()
-                    for leave in record.calendar_id.global_leave_ids
-                ) if record.calendar_id else False
+                # Cek apakah tanggal tersebut adalah hari libur berdasarkan Working Schedule
+                is_holiday = False
+                if record.employee_id and record.employee_id.contract_id and record.employee_id.contract_id.resource_calendar_id:
+                    for leave in record.employee_id.contract_id.resource_calendar_id.global_leave_ids:
+                        leave_date_from = leave.date_from.date()
+                        leave_date_to = leave.date_to.date()
+                        if leave_date_from <= check_in_date <= leave_date_to:
+                            is_holiday = True
+                            break
 
                 # Jika ini adalah check-in pertama pada hari kerja dan bukan hari libur → 1, jika tidak → 0
                 if first_check_in and record.id == first_check_in.id:
@@ -375,11 +324,10 @@ class HrAttendance(models.Model):
             else:
                 record.presensi = 0
 
-    @api.depends('check_in')
-    def _compute_valid_out(self):
+    @api.depends('check_in', 'check_out')
+    def _compute_lembur(self):
         for record in self:
-            previous_valid_out = record.valid_out  # Simpan nilai sebelumnya
-            if record.check_in:
+            if record.check_in and record.check_out:
                 # Konversi check_in ke waktu lokal (WIB - UTC+7)
                 check_in_utc = record.check_in
                 check_in_local = check_in_utc + datetime.timedelta(hours=7)
@@ -387,47 +335,41 @@ class HrAttendance(models.Model):
 
                 employee_id = record.employee_id.id
 
+                # Dapatkan semua record lembur untuk tanggal yang sama
+                attendance_records = []
+                if record.employee_id and record.employee_id.attendance_ids:
+                    for rec in record.employee_id.attendance_ids:
+                        if rec.check_in:
+                            rec_check_in_utc = rec.check_in
+                            rec_check_in_local = rec_check_in_utc + datetime.timedelta(hours=7)
+                            if rec_check_in_local.date() == check_in_date:
+                                attendance_records.append(rec)
+
+                # Cari check-in pertama pada hari itu
+                first_check_in = None
+                if attendance_records:
+                    first_check_in = min(attendance_records, key=lambda r: r.check_in)
+
                 # Cek apakah hari tersebut adalah hari kerja (Senin - Jumat)
-                is_weekday = check_in_date.weekday() < 5
+                is_weekend = check_in_date.weekday() > 4
 
                 # Cek apakah tanggal tersebut adalah hari libur berdasarkan Working Schedule
                 is_holiday = False
-                if record.employee_id and record.employee_id.contract_id and record.calendar_id:
-                    for leave in record.calendar_id.global_leave_ids:
+                if record.employee_id and record.employee_id.contract_id and record.employee_id.contract_id.resource_calendar_id:
+                    for leave in record.employee_id.contract_id.resource_calendar_id.global_leave_ids:
                         leave_date_from = leave.date_from.date()
                         leave_date_to = leave.date_to.date()
                         if leave_date_from <= check_in_date <= leave_date_to:
                             is_holiday = True
                             break
 
-                # Dapatkan rentang waktu lokal (WIB) untuk tanggal yang sama
-                start_datetime_local = datetime.datetime.combine(check_in_date, datetime.time.min) - datetime.timedelta(hours=7)
-                end_datetime_local = datetime.datetime.combine(check_in_date, datetime.time.max) - datetime.timedelta(hours=7)
-
-                # Dapatkan semua record absensi untuk tanggal yang sama berdasarkan WIB
-                attendance_records = self.env['hr.attendance'].search([
-                    ('employee_id', '=', employee_id),
-                    ('check_in', '>=', start_datetime_local),
-                    ('check_in', '<=', end_datetime_local),
-                    ('id', '!=', record.id)
-                ])
-
-                # Jika hari kerja dan bukan hari libur, proses valid_out
-                if is_weekday and not is_holiday:
-                    # Set valid_out sebelumnya menjadi 0
-                    attendance_records.write({'valid_out': 0})
-
-                    # Set valid_out saat ini menjadi 1
-                    record.valid_out = 1
+                # Jika ini adalah check-in pertama pada hari kerja dan bukan hari libur → 1, jika tidak → 0
+                if first_check_in and record.id == first_check_in.id:
+                    record.lembur = 1 if is_weekend and is_holiday else 0
                 else:
-                    record.valid_out = 0
+                    record.lembur = 0
             else:
-                record.valid_out = 0
-
-            # Trigger manual recompute jika valid_out berubah
-            if record.valid_out != previous_valid_out:
-                record._compute_pulang_dini_count()
-
+                record.lembur = 0
 
     @api.model
     def compute_old_data(self):
@@ -462,15 +404,11 @@ class HrAttendance(models.Model):
             else:
                 record.hari = ''
 
-    @api.depends('check_in', 'check_out', 'valid_out')
+    @api.depends('check_in', 'check_out')
     def _compute_pulang_dini_count(self):
         for record in self:
             record.pulang_dini_count = 0  # Default value
             record.pulang_dini = 0  # Default value
-
-            if record.valid_out != 1:
-                continue
-
             if record.check_in and record.check_out:
                 # Konversi check_in dan check_out ke waktu lokal (WIB - UTC+7)
                 check_in_local = record.check_in + datetime.timedelta(hours=7)
@@ -485,9 +423,9 @@ class HrAttendance(models.Model):
 
                 # Ambil work_to dari schedule
                 work_to = 0
-                # calendar = record.employee_id.contract_id.resource_calendar_id
-                if record.calendar_id:
-                    for attendance in record.calendar_id.attendance_ids:
+                calendar = record.employee_id.contract_id.resource_calendar_id
+                if calendar:
+                    for attendance in calendar.attendance_ids:
                         if attendance.dayofweek == str(check_in_date.weekday()) and attendance.day_period == 'afternoon':
                             work_to = attendance.hour_to
                             break
@@ -503,8 +441,8 @@ class HrAttendance(models.Model):
 
                 # Cek apakah tanggal tersebut adalah hari libur berdasarkan Working Schedule
                 is_holiday = False
-                if record.calendar_id and record.calendar_id.global_leave_ids:
-                    for leave in record.calendar_id.global_leave_ids:
+                if calendar and calendar.global_leave_ids:
+                    for leave in calendar.global_leave_ids:
                         if leave.date_from.date() <= check_in_date <= leave.date_to.date():
                             is_holiday = True
                             break
@@ -555,11 +493,11 @@ class HrAttendance(models.Model):
                 # Cek apakah hari tersebut adalah hari libur (Sabtu atau Minggu)
                 is_weekend = check_in_date.weekday() in [5, 6]  # 5 = Sabtu, 6 = Minggu
                 
-                # Cek apakah tanggal tersebut adalah hari libur berdasarkan tanggal saja
+                # Cek apakah tanggal tersebut adalah hari libur berdasarkan Working Schedule
                 is_holiday = any(
                     leave.date_from.date() <= check_in_date <= leave.date_to.date()
-                    for leave in record.calendar_id.global_leave_ids
-                ) if record.calendar_id else False
+                    for leave in record.employee_id.contract_id.resource_calendar_id.global_leave_ids
+                ) if record.employee_id.contract_id and record.employee_id.contract_id.resource_calendar_id else False
                 
                 # Jika ini adalah check-in pertama pada hari libur atau akhir pekan dan minimal 4 jam kerja → 1, jika tidak → 0
                 if time_diff >= 4 and first_check_in and record.id == first_check_in.id and (is_weekend or is_holiday):
@@ -568,45 +506,6 @@ class HrAttendance(models.Model):
                     record.insentif = 0
             else:
                 record.insentif = 0
-
-    @api.depends('check_in', 'check_out')
-    def _compute_lembur(self):
-        for record in self:
-            if record.check_in and record.check_out:
-                # Gunakan zona waktu Indonesia WIB (UTC+7)
-                wib_offset = 7
-                check_in_local = record.check_in + timedelta(hours=wib_offset)
-                check_in_date = check_in_local.date()
-                
-                # Hitung selisih waktu dalam jam
-                time_diff = (record.check_out - record.check_in).total_seconds() / 3600
-                
-                # Dapatkan semua record absensi untuk tanggal yang sama
-                attendance_records = [
-                    rec for rec in record.employee_id.attendance_ids 
-                    if rec.check_in and (rec.check_in + timedelta(hours=wib_offset)).date() == check_in_date
-                ]
-                
-                # Cari check-in pertama pada hari itu
-                first_check_in = min(attendance_records, key=lambda r: r.check_in) if attendance_records else None
-                
-                # Cek apakah hari tersebut adalah hari libur (Sabtu atau Minggu)
-                is_weekend = check_in_date.weekday() in [5, 6]  # 5 = Sabtu, 6 = Minggu
-                
-                # Cek apakah tanggal tersebut adalah hari libur berdasarkan tanggal saja
-                is_holiday = any(
-                    leave.date_from.date() <= check_in_date <= leave.date_to.date()
-                    for leave in record.calendar_id.global_leave_ids
-                ) if record.calendar_id else False
-                
-                # Jika ini adalah check-in pertama pada hari libur atau akhir pekan dan minimal 4 jam kerja → 1, jika tidak → 0
-                if time_diff >= 4 and first_check_in and record.id == first_check_in.id and (is_weekend or is_holiday):
-                    record.lembur = 1
-                else:
-                    record.lembur = 0
-            else:
-                record.lembur = 0
-                
 
     @api.depends('insentif')
     def _compute_status_insentif(self):
