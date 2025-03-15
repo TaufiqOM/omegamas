@@ -9,13 +9,13 @@
                 <field name="calendar_id" invisible="1"/>
                 <field name="day_code" invisible="1"/>
                 <field name="work_from" invisible="1"/>
-                <field name="employee_type" />
+                <field name="employee_type" invisible="1"/>
                 <field name="hari" />
                 <field name="work_from_display" />
                 <field name="terlambat_count"/>
                 <field name="terlambat_display"/>
                 <field name="alasan_terlambat"/>
-                <field name="valid" invisible="1"/>
+                <field name="valid"/>
             </xpath>
             <xpath expr="//field[@name='check_out']" position="after">
                 <field name="work_to" invisible="1"/>
@@ -126,6 +126,7 @@
             <xpath expr="//field[@name='check_out']" position="after">
                 <field optional="show" name="presensi"/>
                 <field optional="show" name="insentif"/>
+                <field optional="show" name="lembur"/>
                 <field optional="show" name="catatan_insentif"/>
                 <field optional="show" name="msh_count"/>
                 <field optional="show" name="terlambat_count"/>

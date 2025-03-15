@@ -14,6 +14,7 @@ class HrPayslip(models.Model):
     t_jht_comp = fields.Monetary(string="(T) JHT Comp", compute="_compute_t_jht_comp", store=True, currency_field='currency_id')
     t_bpjs_kesehatan = fields.Monetary(string="(T) BPJS Kesehatan", compute="_compute_t_bpjs_kesehatan", store=True, currency_field='currency_id')
     t_jp_company = fields.Monetary(string="(T) JP Company", compute="_compute_t_jp_company", store=True, currency_field='currency_id')
+    t_jabatan = fields.Monetary(string="(T) Jabatan", compute="_compute_t_jabatan", store=True, currency_field='currency_id')
     t_tidak_tetap = fields.Monetary(string="(T) Tidak Tetap", compute="_compute_t_tidak_tetap", store=True, currency_field='currency_id')
     t_lain_lain = fields.Monetary(string="(T) Lain Lain", compute="_compute_t_lain_lain", store=True, currency_field='currency_id')
     t_insentif = fields.Monetary(string="(T) Insentif", compute="_compute_t_insentif", store=True, currency_field='currency_id')
@@ -82,6 +83,12 @@ class HrPayslip(models.Model):
         for record in self:
             line = record.line_ids.filtered(lambda l: l.code == 'JPC+')
             record.t_jp_company = line.total if line else 0.0
+
+    @api.depends('line_ids.total')
+    def _compute_t_jabatan(self):
+        for record in self:
+            line = record.line_ids.filtered(lambda l: l.code == 'TJ')
+            record.t_jabatan = line.total if line else 0.0
 
     @api.depends('line_ids.total')
     def _compute_t_tidak_tetap(self):

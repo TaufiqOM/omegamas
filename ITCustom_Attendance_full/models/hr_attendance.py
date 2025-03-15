@@ -283,7 +283,21 @@ class HrAttendance(models.Model):
             if record.check_in:
                 check_in_local = record.check_in + datetime.timedelta(hours=7)
                 check_in_date = check_in_local.date()
-                
+
+                # Cek apakah hari tersebut adalah hari kerja (Senin - Jumat)
+                is_weekday = check_in_date.weekday() < 5
+
+                # Cek apakah tanggal tersebut adalah hari libur berdasarkan calendar_id dan tanggal
+                is_holiday = any(
+                    leave.date_from.date() <= check_in_date <= leave.date_to.date()
+                    for leave in record.calendar_id.global_leave_ids
+                ) if record.calendar_id else False
+
+                # Jika bukan hari kerja atau hari libur, tidak valid
+                if not is_weekday or is_holiday:
+                    record.valid = 0
+                    continue
+
                 # Cek jika sudah ada presensi di hari yang sama
                 for rec in record.employee_id.attendance_ids:
                     if rec.id != record.id and rec.check_in:
@@ -291,6 +305,7 @@ class HrAttendance(models.Model):
                         if rec_check_in_local.date() == check_in_date and rec.presensi == 1:
                             record.valid = 0
                             break
+
                         
     @api.depends('check_in', 'work_from', 'valid')
     def _compute_terlambat(self):
