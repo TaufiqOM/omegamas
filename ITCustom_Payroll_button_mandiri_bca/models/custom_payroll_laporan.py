@@ -66,7 +66,7 @@ class HrPayslip(models.Model):
         batch_name = self[0].payslip_run_id.name if self[0].payslip_run_id else "Gaji Karyawan"
 
         # **Baris dimulai dari baris 8**
-        row = 7  # Baris dimulai dari 8 (indeks 7)
+        row = 2  # Baris dimulai dari 8 (indeks 7)
 
         # **Header Laporan**
         worksheet.write(row, 0, "Periode Penggajian", normal)
@@ -89,53 +89,60 @@ class HrPayslip(models.Model):
             "Tanggal Berhenti", "Lama Kerja", "Status Pajak"
         ]
 
-        # Ambil semua komponen gaji yang ada di struktur gaji payslip
-        salary_structure = self[0].struct_id
-        salary_rule_ids = salary_structure.rule_ids.filtered(lambda r: r.appears_on_payslip)
+        # Daftar field dengan optional="show" dari XML
+        optional_show_fields = [
+            'basic_wage', 't_alrapel', 't_makan', 't_jkk', 't_jkm', 't_jht_comp', 't_bpjs_kesehatan', 
+            't_jp_company', 't_jabatan', 't_tidak_tetap', 't_lain_lain', 't_insentif', 't_pph21', 
+            'gross_wage', 'p_jht_comp', 'p_jht_employee', 'p_bpjs_jkk', 'p_bpjs_jkm', 'p_bpjs_kes_comp', 
+            'p_bpjs_kes_emp', 'p_jp_company', 'p_jp_employee', 'p_meal', 'p_tunj_tidak_tetap', 
+            'p_absensi', 'p_terlambat', 'p_pinjaman', 'p_pph21', 'p_potongan', 'net_wage'
+        ]
 
-        # Kelompokkan komponen gaji berdasarkan kategori
-        allowance_rules = salary_rule_ids.filtered(lambda r: r.category_id.code in ['ALW', 'COMP'])  # Allowance
-        deduction_rules = salary_rule_ids.filtered(lambda r: r.category_id.code == 'DED')  # Deduction
-        other_rules = salary_rule_ids - allowance_rules - deduction_rules  # Komponen sisa
-
-        # **Tulis header dengan merge dua baris hanya sampai kolom 12**
+        # **Tulis header dengan merge dua baris hanya sampai kolom 10**
         col = 0
-        for header in headers[:12]:  # Hanya sampai kolom 12 (indeks 11)
+        for header in headers[:11]:  # Hanya sampai kolom 10 (indeks 10)
             worksheet.merge_range(row, col, row + 1, col, header, header_style)  # Merge dua baris
             col += 1
 
-        # **Tulis header komponen sisa dengan merge atas dan bawah**
-        for rule in other_rules:
-            worksheet.merge_range(row, col, row + 1, col, rule.name, header_style)  # Merge dua baris
-            col += 1
+        # **Tulis header khusus untuk kolom 11 ke atas**
+        # Basic Wage (merge ke bawah)
+        worksheet.merge_range(row, col, row + 1, col, "Basic Wage", header_style)
+        col += 1
 
-        # **Tulis header "Tunjangan" di atas komponen gaji dengan kategori Allowance**
-        if allowance_rules:
-            # Tentukan kolom awal dan akhir untuk merge header "Tunjangan"
-            start_col = col
-            end_col = col + len(allowance_rules) - 1
+        # Tunjangan (header dengan colspan)
+        worksheet.merge_range(row, col, row, col + 11, "Tunjangan", tunjangan_header_style)
+        # Sub-header untuk Tunjangan
+        tunjangan_sub_headers = [
+            '(T) Alrapel', '(T) Makan', '(T) JKK', '(T) JKM', '(T) JHT Comp', '(T) BPJS Kesehatan', 
+            '(T) JP Company', '(T) Jabatan', '(T) Tidak Tetap', '(T) Lain Lain', '(T) Insentif', '(T) PPH21'
+        ]
+        for i, sub_header in enumerate(tunjangan_sub_headers):
+            worksheet.write(row + 1, col + i, sub_header, tunjangan_header_style)
+        col += len(tunjangan_sub_headers)
 
-            # Merge header "Tunjangan" ke kanan sampai akhir kategori yang relevan
-            worksheet.merge_range(row, start_col, row, end_col, "Tunjangan", tunjangan_header_style)
+        # Gross Wage (merge ke bawah)
+        worksheet.merge_range(row, col, row + 1, col, "Gross Wage", header_style)
+        col += 1
 
-            # Tulis header komponen gaji di bawah header "Tunjangan"
-            for rule in allowance_rules:
-                worksheet.write(row + 1, col, rule.name, header_style)
-                col += 1
+        # Potongan (header dengan colspan)
+        worksheet.merge_range(row, col, row, col + 13, "Potongan", potongan_header_style)
+        # Sub-header untuk Potongan
+        potongan_sub_headers = [
+            '(P) JHT Comp', '(P) JHT Employee', '(P) BPJS JKK', '(P) BPJS JKM', '(P) BPJS Kes Comp', 
+            '(P) BPJS Kes Emp', '(P) JP Company', '(P) JP Employee', '(P) Meal', '(P) Tunj. Tidak Tetap', 
+            '(P) Absensi', '(P) Terlambat', '(P) Pinjaman', '(P) PPH21'
+        ]
+        for i, sub_header in enumerate(potongan_sub_headers):
+            worksheet.write(row + 1, col + i, sub_header, potongan_header_style)
+        col += len(potongan_sub_headers)
 
-        # **Tulis header "Potongan" di atas komponen gaji dengan kategori Deduction**
-        if deduction_rules:
-            # Tentukan kolom awal dan akhir untuk merge header "Potongan"
-            start_col = col
-            end_col = col + len(deduction_rules) - 1
+        # Total Potongan (merge ke bawah)
+        worksheet.merge_range(row, col, row + 1, col, "Total Potongan", header_style)
+        col += 1
 
-            # Merge header "Potongan" ke kanan sampai akhir kategori yang relevan
-            worksheet.merge_range(row, start_col, row, end_col, "Potongan", potongan_header_style)
-
-            # Tulis header komponen gaji di bawah header "Potongan"
-            for rule in deduction_rules:
-                worksheet.write(row + 1, col, rule.name, header_style)
-                col += 1
+        # Net Wage (merge ke bawah)
+        worksheet.merge_range(row, col, row + 1, col, "Net Wage", header_style)
+        col += 1
 
         row += 2  # Pindah ke baris setelah header yang digabung
 
@@ -146,7 +153,7 @@ class HrPayslip(models.Model):
             barcode = payslip.employee_id.barcode or "Tidak Ada"
             department_name = payslip.employee_id.department_id.name.split(" / ")[-1] if payslip.employee_id.department_id.name else "Tidak Ada"
             job_name = payslip.employee_id.job_id.name or "Tidak Ada"
-            tipe_karyawan = payslip.employee_id.x_studio_tipe_karyawan or "Tidak Ada"
+            tipe_karyawan = (payslip.employee_type or "Tidak Ada").title()
             contract_type = payslip.contract_id.contract_type_id.name if payslip.contract_id else "Tidak Ada"
             tanggal_bergabung = payslip.contract_id.date_start.strftime('%d-%m-%Y') if payslip.contract_id.date_start else ""
             tanggal_berhenti = ""
@@ -175,31 +182,18 @@ class HrPayslip(models.Model):
             worksheet.write(row, 9, lama_kerja, normal)  # Kolom 10: Lama Kerja
             worksheet.write(row, 10, status_pajak, normal)  # Kolom 11: Status Pajak
 
-            # Isi data untuk setiap komponen gaji yang ada di struktur gaji payslip
+            # Isi data untuk setiap field yang memiliki optional="show"
             col = 11  # Mulai dari kolom 11
-            for rule in other_rules:
-                line = payslip.line_ids.filtered(lambda l: l.salary_rule_id.id == rule.id)
-                amount = line.total if line else 0.0
-                worksheet.write(row, col, amount, normal)
-                col += 1
-
-            for rule in allowance_rules:
-                line = payslip.line_ids.filtered(lambda l: l.salary_rule_id.id == rule.id)
-                amount = line.total if line else 0.0
-                worksheet.write(row, col, amount, normal)
-                col += 1
-
-            for rule in deduction_rules:
-                line = payslip.line_ids.filtered(lambda l: l.salary_rule_id.id == rule.id)
-                amount = line.total if line else 0.0
-                worksheet.write(row, col, amount, normal)
+            for field_name in optional_show_fields:
+                field_value = getattr(payslip, field_name, 0.0)
+                worksheet.write(row, col, field_value, normal)
                 col += 1
 
             row += 1
             nomor += 1  # Tambah nomor urut
 
         # Auto-fit lebar kolom berdasarkan isi data
-        for col_num in range(len(headers) + len(other_rules) + len(allowance_rules) + len(deduction_rules)):
+        for col_num in range(len(headers) + len(optional_show_fields)):
             worksheet.set_column(col_num, col_num, max(len(str(headers[col_num])) if col_num < len(headers) else 15, 15))  # Minimal lebar 15
 
         workbook.close()

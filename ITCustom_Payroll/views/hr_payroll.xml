@@ -45,11 +45,11 @@
                 <field optional="show" name="p_jp_company"  widget="integer"/>
                 <field optional="show" name="p_jp_employee"  widget="integer"/>
                 <field optional="show" name="p_meal"  widget="integer"/>
-                <field optional="show" name="p_pph21"  widget="integer"/>
                 <field optional="show" name="p_tunj_tidak_tetap"  widget="integer"/>
                 <field optional="show" name="p_absensi"  widget="integer"/>
                 <field optional="show" name="p_terlambat"  widget="integer"/>
                 <field optional="show" name="p_pinjaman"  widget="integer"/>
+                <field optional="show" name="p_pph21"  widget="integer"/>
                 <field optional="show" name="p_potongan"  widget="integer"/>
             </xpath>
             <!-- Ubah tampilan net_wage ke integer -->

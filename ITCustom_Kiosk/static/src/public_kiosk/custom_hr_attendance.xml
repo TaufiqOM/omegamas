@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Template untuk menambahkan teks baru "Omegamas Attendance" -->
+    <t t-name="custom_template" t-inherit="hr_attendance.public_kiosk_app" t-inherit-mode="extension">
+        <!-- XPath untuk menemukan elemen yang ingin ditambahkan teks baru -->
+        <xpath expr="//div[contains(@class, 'alert alert-info')]//div[contains(text(), 'Connect an RFID reader, and scan a token.')]" position="after">
+            <!-- Teks baru yang akan ditambahkan -->
+            <div class="omegamas-attendance">
+                Omegamas Attendance
+            </div>
+        </xpath>
+    </t>
+
+</templates>

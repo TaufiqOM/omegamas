@@ -14,17 +14,18 @@
                 <field name="work_from_display" />
                 <field name="terlambat_count"/>
                 <field name="terlambat_display"/>
-                <field name="alasan_terlambat"/>
-                <field name="valid"/>
+                <field name="alasan_terlambat" placeholder="Alasan keterlambatan..."/>
+                <field name="valid" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='check_out']" position="after">
+                <!-- <field name="check_out" attrs="{'invisible': False}"/> -->
                 <field name="work_to" invisible="1"/>
                 <field name="pulang_dini" invisible="1"/>
                 <field name="terlambat" invisible="1"/>
                 <field name="work_to_display" />
                 <field name="pulang_dini_count"/>
                 <field name="pulang_dini_display"/>
-                <field name="alasan_pulang_dini"/>
+                <field name="alasan_pulang_dini" placeholder="Alasan pulang dini..."/>
                 <field name="valid_out" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='worked_hours']" position="before">
@@ -140,3 +141,5 @@
         </field>
     </record>
 </odoo>
+
+
