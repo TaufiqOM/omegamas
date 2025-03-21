@@ -1,14 +1,11 @@
 {
-    'name': 'Custom Stock Valuation Editable',
+    'name': 'Manufacture Manufacturing Order',
     'version': '1.0',
     'author': 'Taufiqur Rahman',
     'category': 'Inventory',
-    'summary': 'Mengizinkan pengeditan field name pada Stock Valuation (account.move)',
+    'summary': 'Backdate MO',
     'depends': ['purchase', 'hr', 'stock'],
-    'data': [
-        'views/account_move_line_views.xml',
-        'views/stock_move_line_views.xml',
-    ],
+    'data': [],
     'installable': True,
     'application': False,
 }
