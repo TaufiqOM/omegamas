@@ -10,7 +10,13 @@
         'views/hr_payroll.xml',
         'views/hr_salary_attachment.xml',
         'views/hr_contract.xml',
+        'views/hr_payslip_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'ITCustom_Payroll/static/src/css/custom_style.css',
+        ],
+    },
     'installable': True,
     'application': False,
 }

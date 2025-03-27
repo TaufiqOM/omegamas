@@ -6,7 +6,9 @@
     'category': 'Manufacturing',
     'author': 'Taufiqur Rahman',
     'depends': ['mrp', 'account'],
-    'data': [],
+    'data': [
+        'views/mrp_production_views.xml',
+    ],
     'installable': True,
     'application': False,
     'license': 'LGPL-3',

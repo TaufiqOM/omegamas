@@ -91,11 +91,11 @@ class HrPayslip(models.Model):
 
         # Daftar field dengan optional="show" dari XML
         optional_show_fields = [
-            'basic_wage', 't_alrapel', 't_makan', 't_jkk', 't_jkm', 't_jht_comp', 't_bpjs_kesehatan', 
-            't_jp_company', 't_jabatan', 't_tidak_tetap', 't_lain_lain', 't_insentif', 't_pph21', 
-            'gross_wage', 'p_jht_comp', 'p_jht_employee', 'p_bpjs_jkk', 'p_bpjs_jkm', 'p_bpjs_kes_comp', 
-            'p_bpjs_kes_emp', 'p_jp_company', 'p_jp_employee', 'p_meal', 'p_tunj_tidak_tetap', 
-            'p_absensi', 'p_terlambat', 'p_pinjaman', 'p_pph21', 'p_potongan', 'net_wage'
+            'basic_wage', 't_jkm', 't_jkk', 't_jht_comp', 't_bpjs_kesehatan', 't_jp_company', 
+            't_tidak_tetap', 't_lain_lain', 't_jabatan', 't_insentif', 't_makan', 'sub_gross', 't_pph21', 
+            'gross_wage', 'p_bpjs_jkk', 'p_bpjs_jkm', 'p_jht_employee', 'p_jht_comp', 'p_bpjs_kes_comp', 'p_bpjs_kes_emp', 
+            'p_jp_company', 'p_jp_employee', 'p_meal', 'p_terlambat', 
+            'p_pinjaman', 'p_gaji', 'p_potongan', 'p_pph21', 'net_wage'
         ]
 
         # **Tulis header dengan merge dua baris hanya sampai kolom 10**
@@ -110,27 +110,35 @@ class HrPayslip(models.Model):
         col += 1
 
         # Tunjangan (header dengan colspan)
-        worksheet.merge_range(row, col, row, col + 11, "Tunjangan", tunjangan_header_style)
+        worksheet.merge_range(row, col, row, col + 9, "Tunjangan", tunjangan_header_style)
         # Sub-header untuk Tunjangan
         tunjangan_sub_headers = [
-            '(T) Alrapel', '(T) Makan', '(T) JKK', '(T) JKM', '(T) JHT Comp', '(T) BPJS Kesehatan', 
-            '(T) JP Company', '(T) Jabatan', '(T) Tidak Tetap', '(T) Lain Lain', '(T) Insentif', '(T) PPH21'
+            '(T) JKM', '(T) JKK', '(T) JHT Comp', '(T) BPJS Kesehatan', '(T) JP Company',
+            '(T) Tidak Tetap', '(T) Lain Lain', '(T) Jabatan', '(T) Insentif', '(T) Makan'
         ]
         for i, sub_header in enumerate(tunjangan_sub_headers):
             worksheet.write(row + 1, col + i, sub_header, tunjangan_header_style)
         col += len(tunjangan_sub_headers)
 
         # Gross Wage (merge ke bawah)
+        worksheet.merge_range(row, col, row + 1, col, "SUB GROSS", header_style)
+        col += 1
+
+        # Gross Wage (merge ke bawah)
+        worksheet.merge_range(row, col, row + 1, col, "Tunjangan Pajak", header_style)
+        col += 1
+
+        # Gross Wage (merge ke bawah)
         worksheet.merge_range(row, col, row + 1, col, "Gross Wage", header_style)
         col += 1
 
         # Potongan (header dengan colspan)
-        worksheet.merge_range(row, col, row, col + 13, "Potongan", potongan_header_style)
+        worksheet.merge_range(row, col, row, col + 11, "Potongan", potongan_header_style)
         # Sub-header untuk Potongan
         potongan_sub_headers = [
-            '(P) JHT Comp', '(P) JHT Employee', '(P) BPJS JKK', '(P) BPJS JKM', '(P) BPJS Kes Comp', 
-            '(P) BPJS Kes Emp', '(P) JP Company', '(P) JP Employee', '(P) Meal', '(P) Tunj. Tidak Tetap', 
-            '(P) Absensi', '(P) Terlambat', '(P) Pinjaman', '(P) PPH21'
+            '(P) BPJS JKK', '(P) BPJS JKM', '(P) JHT Employee', '(P) JHT Comp', '(P) BPJS Kesehatan Company', '(P) BPJS Kes Emp', 
+            '(P) JP Company', '(P) JP Employee', '(P) Meal', '(P) Terlambat', 
+            '(P) Pinjaman', '(P) Potongan Gaji'
         ]
         for i, sub_header in enumerate(potongan_sub_headers):
             worksheet.write(row + 1, col + i, sub_header, potongan_header_style)
@@ -138,6 +146,9 @@ class HrPayslip(models.Model):
 
         # Total Potongan (merge ke bawah)
         worksheet.merge_range(row, col, row + 1, col, "Total Potongan", header_style)
+        col += 1
+
+        worksheet.merge_range(row, col, row + 1, col, "Pajak", header_style)
         col += 1
 
         # Net Wage (merge ke bawah)
@@ -192,6 +203,19 @@ class HrPayslip(models.Model):
             row += 1
             nomor += 1  # Tambah nomor urut
 
+        # **Tambahkan baris Total**
+        worksheet.merge_range(row, 0, row, 10, "Total", header_style)  # Merge kolom 1-11 (indeks 0-10)
+
+        # **Hitung total untuk setiap kolom yang relevan**
+        col = 11  # Mulai dari kolom 11 (indeks 11)
+        for field_name in optional_show_fields:
+            total = sum(getattr(payslip, field_name, 0.0) for payslip in self)
+            worksheet.write(row, col, total, header_style)
+            col += 1
+
+        row += 1  # Pindah ke baris berikutnya setelah baris Total
+
+
         # Auto-fit lebar kolom berdasarkan isi data
         for col_num in range(len(headers) + len(optional_show_fields)):
             worksheet.set_column(col_num, col_num, max(len(str(headers[col_num])) if col_num < len(headers) else 15, 15))  # Minimal lebar 15
@@ -216,3 +240,4 @@ class HrPayslip(models.Model):
             'url': f'/web/content/{attachment.id}?download=true',
             'target': 'self',
         }
+    

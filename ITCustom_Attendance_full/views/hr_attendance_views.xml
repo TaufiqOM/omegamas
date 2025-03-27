@@ -18,20 +18,22 @@
                 <field name="valid" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='check_out']" position="after">
-                <!-- <field name="check_out" attrs="{'invisible': False}"/> -->
                 <field name="work_to" invisible="1"/>
                 <field name="pulang_dini" invisible="1"/>
-                <field name="terlambat" invisible="1"/>
+                <field name="terlambat"/>
                 <field name="work_to_display" />
                 <field name="pulang_dini_count"/>
                 <field name="pulang_dini_display"/>
                 <field name="alasan_pulang_dini" placeholder="Alasan pulang dini..."/>
                 <field name="valid_out" invisible="1"/>
+                <field name="istirahat_from"/>
+                <field name="istirahat_to"/>
             </xpath>
             <xpath expr="//field[@name='worked_hours']" position="before">
                 <div class="o_row">
                     <label for="presensi" string="Presensi"/>
-                    <field name="presensi"/>
+                    <field name="presensi" invisible="1"/>
+                    <field name="tidak_efektif"/>
                     <label for="lembur" string="Lembur" invisible="not (employee_type != 'staff')"/>
                     <field name="lembur" invisible="not (employee_type != 'staff')"/>
                     <label for="insentif" string="Insentif" invisible="not (employee_type == 'staff')"/>
@@ -141,5 +143,3 @@
         </field>
     </record>
 </odoo>
-
-

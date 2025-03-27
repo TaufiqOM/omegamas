@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <!-- Tambahkan field sebelum employee_id -->
             <xpath expr="//field[@name='employee_id']" position="before">
-                <field optional="show" name="employee_type"/>
+                <field optional="show" name="employee_type" class="green-column"/>
                 <field optional="show" name="barcode"/>
                 <field optional="show" name="bank_name"/>
             </xpath>
@@ -29,6 +29,7 @@
                 <field optional="show" name="t_lain_lain"  widget="integer"/>
                 <field optional="show" name="t_insentif"  widget="integer"/>
                 <field optional="show" name="t_pph21"  widget="integer"/>
+                <field optional="show" name="sub_gross"  widget="integer"/>
             </xpath>
             <!-- Ubah tampilan gross_wage ke integer -->
             <xpath expr="//field[@name='gross_wage']" position="attributes">
@@ -49,6 +50,7 @@
                 <field optional="show" name="p_absensi"  widget="integer"/>
                 <field optional="show" name="p_terlambat"  widget="integer"/>
                 <field optional="show" name="p_pinjaman"  widget="integer"/>
+                <field optional="show" name="p_gaji"  widget="integer"/>
                 <field optional="show" name="p_pph21"  widget="integer"/>
                 <field optional="show" name="p_potongan"  widget="integer"/>
             </xpath>

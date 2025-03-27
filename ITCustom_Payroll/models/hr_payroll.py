@@ -19,6 +19,7 @@ class HrPayslip(models.Model):
     t_lain_lain = fields.Monetary(string="(T) Lain Lain", compute="_compute_t_lain_lain", store=True, currency_field='currency_id')
     t_insentif = fields.Monetary(string="(T) Insentif", compute="_compute_t_insentif", store=True, currency_field='currency_id')
     t_pph21 = fields.Monetary(string="(T) PPH21", compute="_compute_t_pph21", store=True, currency_field='currency_id')
+    sub_gross = fields.Monetary(string="SUB GROSS", compute="_compute_sub_gross", store=True, currency_field='currency_id')
     p_jht_comp = fields.Monetary(string="(P) JHT Comp", compute="_compute_p_jht_comp", store=True, currency_field='currency_id')
     p_jht_employee = fields.Monetary(string="(P) JHT Employee", compute="_compute_p_jht_employee", store=True, currency_field='currency_id')
     p_bpjs_jkk = fields.Monetary(string="(P) BPJS JKK", compute="_compute_p_bpjs_jkk", store=True, currency_field='currency_id')
@@ -33,6 +34,7 @@ class HrPayslip(models.Model):
     p_absensi = fields.Monetary(string="(P) Absensi", compute="_compute_p_absensi", store=True, currency_field='currency_id')
     p_terlambat = fields.Monetary(string="(P) Terlambat", compute="_compute_p_terlambat", store=True, currency_field='currency_id')
     p_pinjaman = fields.Monetary(string="(P) Pinjaman", compute="_compute_pinjaman", store=True, currency_field='currency_id')
+    p_gaji = fields.Monetary(string="(P) Potong Gaji", compute="_compute_potong_gaji", store=True, currency_field='currency_id')
     p_potongan = fields.Monetary(string="Total Potongan", compute="_compute_potongan", store=True, currency_field='currency_id')
 
     
@@ -107,6 +109,12 @@ class HrPayslip(models.Model):
         for record in self:
             line = record.line_ids.filtered(lambda l: l.code == 'INS')
             record.t_insentif = line.total if line else 0.0
+
+    @api.depends('line_ids.total')
+    def _compute_sub_gross(self):
+        for record in self:
+            line = record.line_ids.filtered(lambda l: l.code == 'SUBGROSS')
+            record.sub_gross = line.total if line else 0.0
 
     @api.depends('line_ids.total')
     def _compute_t_pph21(self):
@@ -197,6 +205,12 @@ class HrPayslip(models.Model):
         for record in self:
             line = record.line_ids.filtered(lambda l: l.code == 'PINJAMAN')
             record.p_pinjaman = line.total if line else 0.0
+
+    @api.depends('line_ids.total')
+    def _compute_potong_gaji(self):
+        for record in self:
+            line = record.line_ids.filtered(lambda l: l.code == 'PG')
+            record.p_gaji = line.total if line else 0.0
 
     @api.depends('line_ids.total')
     def _compute_potongan(self):
