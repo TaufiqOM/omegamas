@@ -18,7 +18,7 @@
                 <field name="valid" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='check_out']" position="after">
-                <field name="work_to" invisible="1"/>
+                <field name="work_to"/>
                 <field name="pulang_dini" invisible="1"/>
                 <field name="terlambat"/>
                 <field name="work_to_display" />
@@ -41,7 +41,7 @@
                 </div>
                 <field name="status_insentif" invisible="not (employee_type == 'staff')"/>
                 <field name="catatan_insentif" invisible="not (employee_type == 'staff')"/>
-                <field name="kategori_selection"  invisible="not (employee_type != 'staff')"/>
+                <field name="kategori_selection"/>
                 <field name="durasi" invisible="not (kategori_selection in ['MP', 'MSH'])"/>
                 <field name="durasi_menit" invisible="1"/>
                 <field name="msh_count" invisible="1"/>

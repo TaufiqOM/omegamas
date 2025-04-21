@@ -11,6 +11,7 @@
         'views/hr_salary_attachment.xml',
         'views/hr_contract.xml',
         'views/hr_payslip_views.xml',
+        'views/hr_payslip_check_action.xml',
     ],
     'assets': {
         'web.assets_backend': [

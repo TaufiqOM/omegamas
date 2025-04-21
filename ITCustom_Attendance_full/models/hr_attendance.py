@@ -561,14 +561,8 @@ class HrAttendance(models.Model):
                     if rec.check_in and (rec.check_in + datetime.timedelta(hours=7)).date() == check_in_date
                 ]
 
-                # Ambil work_to dari schedule
-                work_to = 0
-                # calendar = record.employee_id.contract_id.resource_calendar_id
-                if record.calendar_id:
-                    for attendance in record.calendar_id.attendance_ids:
-                        if attendance.dayofweek == str(check_in_date.weekday()) and attendance.day_period == 'afternoon':
-                            work_to = attendance.hour_to
-                            break
+                # Ambil work_to langsung dari field
+                work_to = record.work_to or 0
 
                 # Konversi work_to ke waktu datetime dengan aman
                 hours = int(work_to)
@@ -601,6 +595,7 @@ class HrAttendance(models.Model):
                     else:
                         record.pulang_dini_count = 0
                         record.pulang_dini = 0
+
 
     @api.depends('pulang_dini')
     def _compute_pulang_dini_display(self):
