@@ -16,3 +16,13 @@ class Employee(models.Model):
     string="NPWP",
     store=True
     )
+
+    agama = fields.Char(
+        string="Agama",
+        store=True
+    )
+
+    mulai_bergabung = fields.Date(
+        string="Mulai Bergabung",
+        store=True
+    )

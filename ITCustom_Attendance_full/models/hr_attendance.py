@@ -353,46 +353,58 @@ class HrAttendance(models.Model):
     @api.depends('check_in', 'work_from', 'istirahat_from', 'istirahat_to', 'valid')
     def _compute_terlambat(self):
         for record in self:
-            # Jika valid = 0, langsung set terlambat = 0
+            # Reset nilai terlambat
+            record.terlambat = 0
+            
+            # Jika valid = 0, skip perhitungan
             if record.valid == 0:
-                record.terlambat = 0
                 continue
 
             if record.check_in and record.work_from:
                 wib_timezone = dateutil.tz.gettz('Asia/Jakarta')
                 check_in_date = record.check_in.astimezone(wib_timezone)
-
-                # Konversi jam kerja ke waktu yang benar
+                
+                # Konversi jam kerja
                 work_from_hours = int(record.work_from)
                 work_from_minutes = int((record.work_from - work_from_hours) * 60)
                 work_from_time = check_in_date.replace(hour=work_from_hours, minute=work_from_minutes, second=0)
-
-                istirahat_from_hours = int(record.istirahat_from)
-                istirahat_from_minutes = int((record.istirahat_from - istirahat_from_hours) * 60)
-                istirahat_from_time = check_in_date.replace(hour=istirahat_from_hours, minute=istirahat_from_minutes, second=0)
-
-                istirahat_to_hours = int(record.istirahat_to)
-                istirahat_to_minutes = int((record.istirahat_to - istirahat_to_hours) * 60)
-                istirahat_to_time = check_in_date.replace(hour=istirahat_to_hours, minute=istirahat_to_minutes, second=0)
-
+                
+                # Cari semua jadwal istirahat yang valid (work_from > 0)
+                valid_breaks = self.env['resource.calendar.attendance'].search([
+                    ('calendar_id', '=', record.calendar_id.id),
+                    ('dayofweek', '=', str(record.day_code)),
+                    ('day_period', '=', 'lunch'),
+                    ('hour_from', '>', 0)  # Hanya jadwal dengan hour_from > 0
+                ])
+                
+                # Jika check-in terlambat
                 if check_in_date > work_from_time:
-                    if check_in_date < istirahat_from_time:
-                        # Terlambat sebelum istirahat, hitung langsung
-                        delta = check_in_date - work_from_time
-                        record.terlambat = int(delta.total_seconds() // 60)
-                    elif check_in_date > istirahat_to_time:
-                        # Terlambat setelah istirahat, hitung dari work_from hingga istirahat + setelah istirahat
-                        delta_before_lunch = istirahat_from_time - work_from_time
-                        delta_after_lunch = check_in_date - istirahat_to_time
-                        record.terlambat = int((delta_before_lunch.total_seconds() + delta_after_lunch.total_seconds()) // 60)
-                    else:
-                        # Check-in saat jam istirahat, hitung keterlambatan hanya dari jam kerja setelah istirahat
-                        delta = check_in_date - istirahat_to_time
-                        record.terlambat = int(delta.total_seconds() // 60)
-                else:
-                    record.terlambat = 0
-            else:
-                record.terlambat = 0
+                    # Hitung total menit terlambat awal
+                    total_late_minutes = (check_in_date - work_from_time).total_seconds() / 60
+                    
+                    # Kurangi waktu yang termasuk dalam break valid
+                    for break_schedule in valid_breaks:
+                        break_start = check_in_date.replace(
+                            hour=int(break_schedule.hour_from),
+                            minute=int((break_schedule.hour_from - int(break_schedule.hour_from)) * 60),
+                            second=0
+                        )
+                        break_end = check_in_date.replace(
+                            hour=int(break_schedule.hour_to),
+                            minute=int((break_schedule.hour_to - int(break_schedule.hour_to)) * 60),
+                            second=0
+                        )
+                        
+                        # Jika check-in setelah break selesai
+                        if check_in_date >= break_end:
+                            # Kurangi durasi break dari total terlambat
+                            total_late_minutes -= (break_end - break_start).total_seconds() / 60
+                        # Jika check-in selama break
+                        elif check_in_date > break_start:
+                            # Hitung hanya sampai awal break
+                            total_late_minutes = (break_start - work_from_time).total_seconds() / 60
+                    
+                    record.terlambat = max(0, int(total_late_minutes))  # Pastikan tidak negatif
 
 
     @api.depends('terlambat')

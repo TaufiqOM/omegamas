@@ -8,6 +8,8 @@
             <!-- Tambahkan field npwp di bawah bank_account_id -->
             <xpath expr="//field[@name='bank_account_id']" position="after">
                 <field name="npwp" string="NPWP"/>
+                <field name="agama" string="Agama"/>
+                <field name="mulai_bergabung" string="Mulai Bergabung"/>
             </xpath>
         </field>
     </record>
