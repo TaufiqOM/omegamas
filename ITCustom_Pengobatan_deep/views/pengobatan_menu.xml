@@ -1,0 +1,9 @@
+<odoo>
+    <menuitem id="menu_pengobatan_root" name="Pengobatan" sequence="10"/>
+    
+    <menuitem id="menu_pengobatan" name="Pengobatan Karyawan" parent="menu_pengobatan_root" action="action_pengobatan" sequence="10"/>
+    
+    <menuitem id="menu_configuration" name="Konfigurasi" parent="menu_pengobatan_root" sequence="20"/>
+    
+    <menuitem id="menu_pengobatan_config" name="Pengaturan Pengobatan" parent="menu_configuration" sequence="10"/>
+</odoo>

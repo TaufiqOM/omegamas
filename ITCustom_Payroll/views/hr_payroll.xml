@@ -49,6 +49,8 @@
                 <field optional="show" name="p_tunj_tidak_tetap"  widget="integer"/>
                 <field optional="show" name="p_absensi"  widget="integer"/>
                 <field optional="show" name="p_terlambat"  widget="integer"/>
+                <field optional="show" name="p_pd"  widget="integer"/>
+                <field optional="show" name="p_mp"  widget="integer"/>
                 <field optional="show" name="p_pinjaman"  widget="integer"/>
                 <field optional="show" name="p_gaji"  widget="integer"/>
                 <field optional="show" name="p_pph21"  widget="integer"/>

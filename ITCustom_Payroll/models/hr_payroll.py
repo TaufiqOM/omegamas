@@ -33,6 +33,8 @@ class HrPayslip(models.Model):
     p_tunj_tidak_tetap = fields.Monetary(string="(P) Tunj. Tidak Tetap", compute="_compute_p_tunj_tidak_tetap", store=True, currency_field='currency_id')
     p_absensi = fields.Monetary(string="(P) Absensi", compute="_compute_p_absensi", store=True, currency_field='currency_id')
     p_terlambat = fields.Monetary(string="(P) Terlambat", compute="_compute_p_terlambat", store=True, currency_field='currency_id')
+    p_pd = fields.Monetary(string="(P) Pulang Dini", compute="_compute_p_pd", store=True, currency_field='currency_id')
+    p_mp = fields.Monetary(string="(P) Meninggalkan Pekerjaan", compute="_compute_p_mp", store=True, currency_field='currency_id')
     p_pinjaman = fields.Monetary(string="(P) Pinjaman", compute="_compute_pinjaman", store=True, currency_field='currency_id')
     p_gaji = fields.Monetary(string="(P) Potong Gaji", compute="_compute_potong_gaji", store=True, currency_field='currency_id')
     p_potongan = fields.Monetary(string="Total Potongan", compute="_compute_potongan", store=True, currency_field='currency_id')
@@ -199,6 +201,18 @@ class HrPayslip(models.Model):
         for record in self:
             line = record.line_ids.filtered(lambda l: l.code == 'TLB')
             record.p_terlambat = line.total if line else 0.0
+
+    @api.depends('line_ids.total')
+    def _compute_p_pd(self):
+        for record in self:
+            line = record.line_ids.filtered(lambda l: l.code == 'PPD')
+            record.p_pd = line.total if line else 0.0
+
+    @api.depends('line_ids.total')
+    def _compute_p_mp(self):
+        for record in self:
+            line = record.line_ids.filtered(lambda l: l.code == 'MP')
+            record.p_mp = line.total if line else 0.0
 
     @api.depends('line_ids.total')
     def _compute_pinjaman(self):

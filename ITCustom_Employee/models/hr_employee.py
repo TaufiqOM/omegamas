@@ -11,7 +11,7 @@ class Employee(models.Model):
         ],
         ondelete={'staff': 'set default', 'magang': 'set default', 'konsultan': 'set default'}
     )
-
+    
     npwp = fields.Char(
     string="NPWP",
     store=True

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_attendance.BarcodeScanner" t-inherit="hr_attendance.BarcodeScanner" t-inherit-mode="extension">
+        <xpath expr="//span[contains(., 'Scan your badge')]" position="replace">
+            <span class="d-block">Scan Disini</span>
+        </xpath>
+    </t>
+</templates>

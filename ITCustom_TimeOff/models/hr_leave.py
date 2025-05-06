@@ -1,31 +1,66 @@
-from odoo import fields, models, api
+from odoo import models, api, fields
 
-class CustomTimeOffReport(models.Model):
-    _name = 'custom.timeoff.report'
-    _description = 'Time Off Report with All Employees'
-    _auto = False
+class HrLeave(models.Model):
+    _inherit = 'hr.leave'
 
-    employee_id = fields.Many2one('hr.employee', string="Employee")
-    employee_name = fields.Char(string="Employee Name")
-    time_off_type = fields.Many2one('hr.leave.type', string="Time Off Type")
-    total_days = fields.Float(string="Total Days")
+    @api.model
+    def create(self, vals):
+        leave = super(HrLeave, self).create(vals)
+        if leave.state == 'validate':
+            leave._force_clean_work_entry()
+        return leave
 
-    def init(self):
-        self.env.cr.execute("""
-            CREATE OR REPLACE VIEW custom_timeoff_report AS (
-                SELECT
-                    e.id AS id,
-                    e.id AS employee_id,
-                    e.name AS employee_name,
-                    lt.id AS time_off_type,
-                    COALESCE(SUM(l.number_of_days), 0) AS total_days
-                FROM
-                    hr_employee e
-                LEFT JOIN
-                    hr_leave l ON l.employee_id = e.id AND l.state = 'validate'
-                LEFT JOIN
-                    hr_leave_type lt ON lt.id = l.holiday_status_id
-                GROUP BY
-                    e.id, e.name, lt.id
-            )
-        """)
+    def write(self, vals):
+        res = super(HrLeave, self).write(vals)
+        if 'state' in vals and vals['state'] == 'validate':
+            self._force_clean_work_entry()
+        return res
+
+    def _force_clean_work_entry(self):
+        for leave in self:
+            # Cari semua work entry bentrok
+            domain = [
+                ('employee_id', '=', leave.employee_id.id),
+                ('date_start', '<', leave.date_to),
+                ('date_stop', '>', leave.date_from),
+                ('state', '=', 'draft'),
+            ]
+            conflict_entries = self.env['hr.work.entry'].search(domain)
+
+            for entry in conflict_entries:
+                entry_start = entry.date_start
+                entry_stop = entry.date_stop
+                leave_start = leave.date_from
+                leave_stop = leave.date_to
+
+                if leave_start <= entry_start and leave_stop >= entry_stop:
+                    # Leave nutup semua: hapus entry
+                    entry.unlink()
+                elif leave_start <= entry_start < leave_stop < entry_stop:
+                    # Potong awal
+                    entry.date_start = leave_stop
+                elif entry_start < leave_start < entry_stop <= leave_stop:
+                    # Potong akhir
+                    entry.date_stop = leave_start
+                elif entry_start < leave_start and entry_stop > leave_stop:
+                    # Split entry
+                    self.env['hr.work.entry'].create({
+                        'employee_id': entry.employee_id.id,
+                        'work_entry_type_id': entry.work_entry_type_id.id,
+                        'date_start': leave_stop,
+                        'date_stop': entry_stop,
+                        'state': 'draft',
+                        'contract_id': entry.contract_id.id,
+                    })
+                    entry.date_stop = leave_start
+
+            # Hapus attendance yang bentrok dengan cuti
+            attendance_domain = [
+                ('employee_id', '=', leave.employee_id.id),
+                ('check_in', '>=', leave.date_from),
+                ('check_out', '<=', leave.date_to),
+                ('check_out', '>', leave.date_from),
+            ]
+            attendance_entries = self.env['hr.attendance'].search(attendance_domain)
+            for attendance in attendance_entries:
+                attendance.unlink()  # Hapus attendance yang bentrok

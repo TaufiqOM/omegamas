@@ -1,0 +1,51 @@
+<odoo>
+    <!-- Tree View -->
+    <record id="view_pengobatan_karyawan_tree" model="ir.ui.view">
+        <field name="name">pengobatan.karyawan.tree</field>
+        <field name="model">pengobatan.klaim</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="employee_id" widget="many2one_avatar"/>
+                <field name="nominal"/>
+                <field name="tanggal_klaim"/>
+                <field name="state" widget="badge" decoration-success="state == 'approve'" decoration-primary="state == 'paid'" decoration-danger="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+    <!-- Form View -->
+    <record id="view_pengobatan_karyawan_form" model="ir.ui.view">
+        <field name="name">pengobatan.karyawan.form</field>
+        <field name="model">pengobatan.klaim</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_approve" type="object" string="Approve"
+            invisible="state != 'draft'"/>
+                    <button name="action_paid" type="object" string="Mark as Paid"
+            invisible="state != 'approve'"/>
+                    <button name="action_set_draft" type="object" string="Reset to Draft"
+            invisible="state not in ['approve', 'paid', 'cancel']"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+            invisible="state in ['cancel']"/>
+                    <!-- Add Cancel button -->
+                    <field name="state" widget="statusbar"
+            invisible="state not in ['draft', 'approve', 'paid', 'cancel']"/>
+                    <!-- Include cancel in the statusbar -->
+                </header>
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="nominal"/>
+                        <field name="tanggal_klaim"/>
+                        <field name="keterangan" placeholder="Masukkan Keterangan..."/>
+                    </group>
+                    <group>
+                        <field name="upload_file" filename="filename" invisible="upload_file"/>
+                        <field name="upload_file" widget="image" invisible="not is_image or not upload_file"/>
+                        <field name="upload_file" widget="pdf_viewer" invisible="not is_pdf or not upload_file"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

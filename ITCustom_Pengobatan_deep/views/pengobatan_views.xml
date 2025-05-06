@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_pengobatan_list" model="ir.ui.view">
+        <field name="name">pengobatan.list</field>
+        <field name="model">pengobatan.pengobatan</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name" string="Nomor"/>
+                <field name="karyawan_id" string="Karyawan"/>
+                <field name="tanggal_pengobatan" string="Tanggal"/>
+                <field name="dokter" string="Dokter"/>
+                <field name="klinik" string="Klinik/Rumah Sakit"/>
+                <field name="biaya" string="Biaya"/>
+                <field name="status" string="Status"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_pengobatan_form" model="ir.ui.view">
+        <field name="name">pengobatan.form</field>
+        <field name="model">pengobatan.pengobatan</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="karyawan_id"/>
+                            <field name="tanggal_pengobatan"/>
+                        </group>
+                        <group>
+                            <field name="dokter"/>
+                            <field name="klinik"/>
+                            <field name="biaya"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Detail Pengobatan">
+                            <field name="diagnosa"/>
+                            <field name="obat"/>
+                        </page>
+                        <page string="Catatan">
+                            <field name="catatan"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_pengobatan" model="ir.actions.act_window">
+        <field name="name">Pengobatan Karyawan</field>
+        <field name="res_model">pengobatan.pengobatan</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

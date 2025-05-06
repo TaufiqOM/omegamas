@@ -1,0 +1,37 @@
+<odoo>
+    <!-- Define Access Control for Pengobatan Model -->
+    <data>
+        <!-- Access Control for Pengobatan Pasien (Contoh Model) -->
+        <record id="access_pengobatan_pasien" model="ir.model.access">
+            <field name="name">Pengobatan Pasien Access</field>
+            <field name="model_id" ref="model_x_pengobatan_pasien"/> <!-- Model diawali dengan x_ -->
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <!-- Jika kamu punya model lain, bisa ditambahkan seperti ini -->
+        <record id="access_pengobatan_obat" model="ir.model.access">
+            <field name="name">Pengobatan Obat Access</field>
+            <field name="model_id" ref="model_x_pengobatan_obat"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <!-- Akses untuk grup pengguna -->
+        <record id="group_pengobatan_admin" model="res.groups">
+            <field name="name">Pengobatan Admin</field>
+            <field name="category_id" ref="base.module_category_settings"/>
+        </record>
+
+        <record id="group_pengobatan_user" model="res.groups">
+            <field name="name">Pengobatan User</field>
+            <field name="category_id" ref="base.module_category_settings"/>
+        </record>
+    </data>
+</odoo>

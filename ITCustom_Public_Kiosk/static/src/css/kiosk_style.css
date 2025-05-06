@@ -1,0 +1,22 @@
+/* Force override with !important */
+.scan-disini-text,
+.o_mobile_barcode span {
+    content: "SCAN DISINI" !important;
+    font-weight: bold !important;
+    color: red !important;
+    text-transform: uppercase !important;
+}
+
+/* Nuclear option - hide original text */
+.o_mobile_barcode span {
+    font-size: 0 !important;
+}
+
+/* Add new text via pseudo-element */
+.o_mobile_barcode span::after {
+    content: "SCAN DISINI" !important;
+    font-size: 1rem !important;
+    font-weight: bold !important;
+    color: red !important;
+    text-transform: uppercase !important;
+}

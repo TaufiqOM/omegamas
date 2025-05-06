@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-extend="hr_attendance.BarcodeScanner">
+        <t t-jquery="span:contains('Scan your badge')" t-operation="replace">
+            <span class="d-block scan-disini-text">SCAN DISINI</span>
+        </t>
+    </t>
+</templates>
