@@ -1,1 +1,0 @@
-from . import pengobatan_model

@@ -1,15 +1,12 @@
 {
-    'name': 'Custom Time Off Auto Resolve Work Entry Conflict',
+    'name': 'Custom Time Off Employee Type',
     'version': '1.0',
-    'summary': 'Auto delete Attendance Work Entry when Time Off approved',
-    'author': 'Taufiqur Rahman & ChatGPT',
     'category': 'Human Resources',
-    'depends': [
-        'hr_work_entry',
-        'hr_holidays',
+    'summary': 'Menampilkan employee_type di form time off',
+    'depends': ['hr_holidays', 'hr'],
+    'data': [
+        'views/hr_leave_views.xml',
     ],
-    'data': [],
     'installable': True,
     'application': False,
-    'auto_install': False,
 }

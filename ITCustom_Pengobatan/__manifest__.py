@@ -1,5 +1,5 @@
 {
-    'name': 'Pengobatan Karyawan',
+    'name': 'Pengobatan',
     'summary': 'App to manage and book meeting rooms.',
     'description': '''
         Manage meeting rooms, book schedules, and prevent double bookings.
@@ -19,7 +19,6 @@
         'views/klaim_views.xml',
         'views/actions.xml',
         'views/menus.xml',
-        
     ],
     
     'installable': True,

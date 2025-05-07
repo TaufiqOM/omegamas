@@ -1,11 +1,14 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError, ValidationError
+import base64
+import io
+import xlsxwriter
 
 class PengobatanKlaim(models.Model):
     _name = 'pengobatan.klaim'
     _description = 'Pengobatan Klaim'
 
-    name = fields.Char(string='Deskripsi Klaim', compute='_compute_name', store=True)
+    name = fields.Char(string='Deskripsi Klaim', compute='_compute_name', store=True, default='Draft')
     employee_id = fields.Many2one(
         'hr.employee',
         string='Nama Karyawan',
@@ -29,13 +32,27 @@ class PengobatanKlaim(models.Model):
         ('cancel', 'Cancelled'),
     ], string='Status', default='draft', tracking=True)
 
-    @api.depends('employee_id', 'tanggal_klaim')
-    def _compute_name(self):
-        for record in self:
-            if record.employee_id and record.tanggal_klaim:
-                record.name = f"{record.employee_id.name} - {record.tanggal_klaim}"
-            else:
-                record.name = 'Klaim Tidak Lengkap'
+    @api.model
+    def create(self, vals):
+        if not vals.get('tanggal_klaim'):
+            raise ValidationError("Tanggal klaim harus diisi terlebih dahulu.")
+        
+        tanggal = fields.Date.from_string(vals['tanggal_klaim'])
+        prefix = f"RMQ-{tanggal.strftime('%Y%m')}-"
+
+        last_record = self.search([
+            ('name', 'like', prefix + '%')
+        ], order='name desc', limit=1)
+
+        if last_record and last_record.name:
+            last_number = int(last_record.name[-7:])
+        else:
+            last_number = 0
+
+        new_number = last_number + 1
+        vals['name'] = f"{prefix}{str(new_number).zfill(7)}"
+
+        return super(PengobatanKlaim, self).create(vals)
 
     @api.depends('filename')
     def _compute_file_type(self):
@@ -110,3 +127,4 @@ class PengobatanKlaim(models.Model):
 
             if sisa < rec.nominal:
                 raise ValidationError("Sisa pengobatan tidak mencukupi untuk klaim ini.")
+            

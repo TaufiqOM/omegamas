@@ -1,5 +1,5 @@
 <odoo>
-    <menuitem id="menu_pengobatan_management" name="Pengobatan Karyawan" sequence="10"
+    <menuitem id="menu_pengobatan_management" name="Pengobatan" sequence="10"
               web_icon="ITCustom_Pengobatan,static/description/icon.png"/>
 
     <menuitem id="menu_pengobatan_klaim" name="Klaim" parent="menu_pengobatan_management" action="action_pengobatan_klaim" sequence="11"/>
