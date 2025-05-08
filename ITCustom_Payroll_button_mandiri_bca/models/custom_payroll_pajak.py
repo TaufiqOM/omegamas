@@ -50,7 +50,14 @@ class HrPayslip(models.Model):
             )
 
             # Bruto dari gross_wage
-            bruto = payslip.gross_wage or 0.0
+            bruto = (
+                (payslip.gross_wage or 0.0)
+                - (payslip.t_jht_comp or 0.0)
+                - (payslip.t_jp_company or 0.0)
+                - (payslip.p_terlambat or 0.0)
+                - (payslip.p_pd or 0.0)
+                - (payslip.p_mp or 0.0)
+            )
             formatted_bruto = "{:,.0f}".format(bruto)
 
             data = [

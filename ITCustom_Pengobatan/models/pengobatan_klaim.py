@@ -31,6 +31,22 @@ class PengobatanKlaim(models.Model):
         ('paid', 'Paid'),
         ('cancel', 'Cancelled'),
     ], string='Status', default='draft', tracking=True)
+    
+    kategori = fields.Selection([
+        ('rawat_jalan', 'Rawat Jalan'),
+        ('frame_lensa', 'Frame & Lensa'),
+    ], string="Kategori", required=True)
+    
+    frame_lensa = fields.Selection([
+        ('frame', 'Frame'),
+        ('kacamata', 'Kacamata'),
+    ], string="Frame / Lensa")
+    
+    @api.onchange('kategori')
+    def _onchange_kategori(self):
+        for rec in self:
+            if rec.kategori != 'frame_lensa':
+                rec.frame_lensa = False
 
     @api.model
     def create(self, vals):
@@ -91,10 +107,14 @@ class PengobatanKlaim(models.Model):
                 raise UserError("You can only delete records with status 'Draft' or 'Cancelled'.")
         return super(PengobatanKlaim, self).unlink()
     
-    @api.model
-    def _get_employee_domain(self):
+    @api.onchange('employee_id')
+    def _onchange_employee_id(self):
         employee_ids = self.env['pengobatan.alokasi'].search([]).mapped('employee_id.id')
-        return [('id', 'in', employee_ids)]
+        return {
+            'domain': {
+                'employee_id': [('id', 'in', employee_ids)]
+            }
+        }
 
     @api.constrains('employee_id', 'tanggal_klaim', 'nominal')
     def _check_valid_alokasi_and_nominal(self):
