@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="mrp_production_form_inherit_valuation" model="ir.ui.view">
+        <field name="name">mrp.production.form.inherit.valuation</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Menambahkan tombol setelah action_buttons -->
+            <xpath expr="//header" position="inside">
+                <button name="action_view_stock_valuation_layers"
+                        type="object"
+                        class="oe_highlight"
+                        string="View Valuation"
+                        visible="show_valuation"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
