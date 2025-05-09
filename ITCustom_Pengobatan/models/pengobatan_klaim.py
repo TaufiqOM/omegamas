@@ -31,34 +31,17 @@ class PengobatanKlaim(models.Model):
         ('paid', 'Paid'),
         ('cancel', 'Cancelled'),
     ], string='Status', default='draft', tracking=True)
-<<<<<<< HEAD
+
     kategori = fields.Selection([
         ('rawat_jalan', 'Rawat Jalan'),
-        ('frame_lensa', 'Frame & Lensa'),
+        ('kacamata', 'Kacamata'),
     ], string='Kategori', required=True)
 
-    frame_lensa = fields.Selection([
-        ('frame', 'Frame'),
-        ('kacamata', 'Kacamata'),
-    ], string='Frame & Lensa')
-=======
-    
-    kategori = fields.Selection([
-        ('rawat_jalan', 'Rawat Jalan'),
+    kacamata = fields.Selection([
         ('frame_lensa', 'Frame & Lensa'),
-    ], string="Kategori", required=True)
-    
-    frame_lensa = fields.Selection([
         ('frame', 'Frame'),
-        ('kacamata', 'Kacamata'),
-    ], string="Frame / Lensa")
-    
-    @api.onchange('kategori')
-    def _onchange_kategori(self):
-        for rec in self:
-            if rec.kategori != 'frame_lensa':
-                rec.frame_lensa = False
->>>>>>> 69ce9ac (Pajak dan pengobatan)
+        ('lensa', 'Lensa'),
+    ], string='Frame & Lensa')
 
     @api.model
     def create(self, vals):
@@ -109,7 +92,8 @@ class PengobatanKlaim(models.Model):
     def action_set_draft(self):
         for rec in self:
             rec.state = 'draft'
-    def action_cancel(self):  # Added cancel action
+
+    def action_cancel(self):
         for rec in self:
             rec.state = 'cancel'
 
@@ -118,15 +102,6 @@ class PengobatanKlaim(models.Model):
             if rec.state not in ['draft', 'cancel']:
                 raise UserError("You can only delete records with status 'Draft' or 'Cancelled'.")
         return super(PengobatanKlaim, self).unlink()
-    
-    @api.onchange('employee_id')
-    def _onchange_employee_id(self):
-        employee_ids = self.env['pengobatan.alokasi'].search([]).mapped('employee_id.id')
-        return {
-            'domain': {
-                'employee_id': [('id', 'in', employee_ids)]
-            }
-        }
 
     @api.constrains('employee_id', 'tanggal_klaim', 'nominal')
     def _check_valid_alokasi_and_nominal(self):
@@ -135,7 +110,6 @@ class PengobatanKlaim(models.Model):
             if not rec.employee_id or not rec.tanggal_klaim:
                 continue
 
-            # Cari alokasi yang cocok untuk karyawan dan tanggal klaim
             alokasis = Alokasi.search([
                 ('employee_id', '=', rec.employee_id.id),
                 ('berlaku_mulai', '<=', rec.tanggal_klaim),
@@ -145,18 +119,31 @@ class PengobatanKlaim(models.Model):
             if not alokasis:
                 raise ValidationError("Tidak ada alokasi pengobatan yang valid untuk karyawan ini pada tanggal klaim.")
 
-            alokasi_valid = alokasis[0]  # Ambil alokasi pertama yang cocok
-            # Hitung total klaim 'paid' untuk alokasi ini
+            alokasi_valid = alokasis[0]
             total_klaim = sum(self.env['pengobatan.klaim'].search([
                 ('employee_id', '=', rec.employee_id.id),
                 ('state', '=', 'paid'),
                 ('tanggal_klaim', '>=', alokasi_valid.berlaku_mulai),
                 ('tanggal_klaim', '<=', alokasi_valid.berlaku_sampai),
-                ('id', '!=', rec.id),  # Hindari menjumlahkan diri sendiri jika sedang diupdate
+                ('id', '!=', rec.id),
             ]).mapped('nominal'))
 
             sisa = alokasi_valid.jatah_pengobatan - total_klaim
 
             if sisa < rec.nominal:
                 raise ValidationError("Sisa pengobatan tidak mencukupi untuk klaim ini.")
-            
+
+    # ✅ Method yang dibutuhkan oleh Wizard Export
+    def export_klaim_action(self, ids, date_start, date_end):
+        klaims = self.browse(ids)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Export Hasil Klaim',
+            'view_mode': 'tree',
+            'res_model': 'pengobatan.klaim',
+            'domain': [('id', 'in', ids)],
+            'context': {
+                'default_date_start': str(date_start),
+                'default_date_end': str(date_end),
+            }
+        }

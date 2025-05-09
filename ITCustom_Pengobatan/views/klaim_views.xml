@@ -1,3 +1,4 @@
+<!-- /Users/admin/Documents/odoo-18E/omegamas/ITCustom_Pengobatan/views/klaim_views.xml -->
 <odoo>
     <!-- Tree View -->
     <record id="view_pengobatan_karyawan_tree" model="ir.ui.view">
@@ -38,23 +39,6 @@
                             <field name="name" class="oe_inline"/>
                         </h1>
                     </div>
-<<<<<<< HEAD
-                    <group col="4" string="Informasi Karyawan">
-                        <field name="employee_id" widget="many2one_avatar_employee"/>
-                        <field name="kategori" required="1"/>
-                        <field name="frame_lensa" invisible="kategori != 'frame_lensa'"/>
-                    </group>
-                    <group col="4" string="Detail Klaim">
-                        <field name="nominal" required="1"/>
-                        <field name="tanggal_klaim" required="1"/>
-                        <field name="keterangan" placeholder="Masukkan Keterangan..."/>
-                    </group>
-                    <group col="4" string="Lampiran Dokumen">
-                        <field name="upload_file" filename="filename" invisible="upload_file"/>
-                        <field name="upload_file" widget="image" invisible="not is_image or not upload_file"/>
-                        <field name="upload_file" widget="pdf_viewer" invisible="not is_pdf or not upload_file"/>
-                    </group>
-=======
                     <div class="row" style="margin-bottom: 20px;">
                         <div class="col-md-6">
                             <group string="Employee Information">
@@ -72,7 +56,7 @@
                         <div class="col-md-6">
                             <group string="Category">
                                 <field name="kategori" required="1" class="oe_inline"/>
-                                <field name="frame_lensa" invisible="kategori != 'frame_lensa'" class="oe_inline"/>
+                                <field name="kacamata" invisible="kategori != 'kacamata'" class="oe_inline"/>
                             </group>
                         </div>
                         <div class="col-md-6">
@@ -90,18 +74,18 @@
                             </group>
                         </div>
                     </div>
->>>>>>> 69ce9ac (Pajak dan pengobatan)
                 </sheet>
             </form>
         </field>
     </record>
-    <record id="action_export_klaim" model="ir.actions.server">
+    <!-- Remove the old server action if it exists -->
+    <delete model="ir.actions.server" id="ITCustom_Pengobatan.action_export_klaim" />
+    <!-- Then create the new window action -->
+    <record id="action_export_klaim" model="ir.actions.act_window">
         <field name="name">Export Klaim</field>
-        <field name="model_id" ref="model_pengobatan_klaim"/>
+        <field name="res_model">export.klaim.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
         <field name="binding_model_id" ref="model_pengobatan_klaim"/>
-        <field name="state">code</field>
-        <field name="code">
-        action = model.export_klaim_action(env.context.get('active_ids'))
-    </field>
     </record>
 </odoo>

@@ -19,6 +19,7 @@
         'views/klaim_views.xml',
         'views/actions.xml',
         'views/menus.xml',
+        'views/export_klaim_wizard_view.xml',
     ],
     
     'installable': True,
