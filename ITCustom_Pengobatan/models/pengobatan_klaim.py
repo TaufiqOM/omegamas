@@ -78,6 +78,8 @@ class PengobatanKlaim(models.Model):
 
     @api.model
     def _get_employee_domain(self):
+        # Clear the cache untuk memastikan data terbaru diambil
+        self.env['pengobatan.alokasi'].clear_caches()
         employee_ids = self.env['pengobatan.alokasi'].search([]).mapped('employee_id.id')
         return [('id', 'in', employee_ids)]
 
@@ -147,3 +149,9 @@ class PengobatanKlaim(models.Model):
                 'default_date_end': str(date_end),
             }
         }
+        
+    @api.constrains('nominal')
+    def _check_nominal(self):
+        for rec in self:
+            if rec.nominal == 0:
+                raise ValidationError("Nominal tidak boleh 0.")

@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 class PengobatanAlokasi(models.Model):
     _name = 'pengobatan.alokasi'
@@ -40,3 +41,9 @@ class PengobatanAlokasi(models.Model):
             name = f"{rec.employee_id.name} - {rec.berlaku_mulai} - {rec.berlaku_sampai}"
             result.append((rec.id, name))
         return result
+    
+    @api.constrains('jatah_pengobatan')
+    def _check_jatah_pengobatan(self):
+        for rec in self:
+            if rec.jatah_pengobatan == 0:
+                raise ValidationError("Jatah Pengobatan tidak boleh 0.")

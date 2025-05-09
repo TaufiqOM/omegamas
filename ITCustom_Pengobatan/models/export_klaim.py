@@ -37,6 +37,15 @@ class ExportKlaimWizard(models.TransientModel):
             'border': 1,
             'font_size': 12
         })
+        
+        # Tambahkan ini setelah deklarasi format lainnya
+        wrap_format = workbook.add_format({
+            'border': 1,
+            'align': 'left',
+            'valign': 'top',
+            'font_size': 11,
+            'text_wrap': True  # Ini yang membuat text wrap
+        })
 
         data_format = workbook.add_format({
             'border': 1,
@@ -99,7 +108,7 @@ class ExportKlaimWizard(models.TransientModel):
                 kategori_str = ''
             worksheet.write(row, 5, kategori_str, data_format)
             worksheet.write(row, 6, klaim.nominal or 0, currency_format)
-            worksheet.write(row, 7, klaim.keterangan or '', data_format)
+            worksheet.write(row, 7, klaim.keterangan or '', wrap_format)
 
         # Total nominal
         total_row = len(klaims) + 2

@@ -12,7 +12,6 @@
             </list>
         </field>
     </record>
-
     <record id="view_pengobatan_alokasi_form" model="ir.ui.view">
         <field name="name">pengobatan.alokasi.form</field>
         <field name="model">pengobatan.alokasi</field>
@@ -25,7 +24,6 @@
                                 options="{'no_open': True}" class="oe_inline" required="1"/>
                         </h1>
                     </div>
-                    
                     <group>
                         <group>
                             <field name="jatah_pengobatan" required="1"/>
