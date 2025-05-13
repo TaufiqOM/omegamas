@@ -1,0 +1,30 @@
+<!-- /Users/admin/Documents/odoo-18E/omegamas/ITCustom_HistoryContract/views/hr_history_contract_views.xml -->
+<odoo>
+    <record id="view_contract_form_inherit_history_tab" model="ir.ui.view">
+        <field name="name">hr.contract.form.inherit.history.tab</field>
+        <field name="model">hr.contract</field>
+        <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Riwayat Kontrak">
+                    <group>
+                        <group string="Data History Saat Ini">
+                            <field name="history_name" readonly="1"/>
+                            <field name="history_start_date" readonly="1"/>
+                            <field name="history_end_date" readonly="1"/>
+                        </group>
+                        
+                        <!-- Tambahkan tombol Update History di dalam tab -->
+                        <group>
+                            <button name="action_update_history"
+                                    type="object"
+                                    string="Update History"
+                                    class="btn-primary"
+                                    icon="fa-refresh"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -5,6 +5,7 @@ import io
 import xlsxwriter
 from datetime import date, datetime
 from dateutil import relativedelta
+from zoneinfo import ZoneInfo
 
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
@@ -55,13 +56,22 @@ class HrPayslip(models.Model):
             '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
         }
 
-        # Format tanggal wizard
+        # Format tanggal dengan jam dan menit otomatis dalam WIB
         if export_date:
             bulan = export_date.strftime('%m')
             bulan_text = bulan_dict.get(bulan, 'Tidak Valid')
-            formatted_date = export_date.strftime(f'%d {bulan_text} %Y')
+            
+            # Dapatkan waktu sekarang dalam WIB
+            jakarta_tz = ZoneInfo('Asia/Jakarta')  # Untuk Python 3.9+
+            # jakarta_tz = pytz.timezone('Asia/Jakarta')  # Untuk Python < 3.9
+            current_time = datetime.now(jakarta_tz).strftime('%H:%M')
+            
+            formatted_date = export_date.strftime(f'%d {bulan_text} %Y') + f' {current_time} WIB'
         else:
-            formatted_date = datetime.today().strftime('%d %B %Y')
+            jakarta_tz = ZoneInfo('Asia/Jakarta')
+            # jakarta_tz = pytz.timezone('Asia/Jakarta')
+            current_time = datetime.now(jakarta_tz).strftime('%H:%M')
+            formatted_date = datetime.today().strftime('%d %B %Y') + f' {current_time} WIB'
 
         # Ambil batch name dari payslip
         batch_name = self[0].payslip_run_id.name if self[0].payslip_run_id else "Gaji Karyawan"
@@ -96,7 +106,7 @@ class HrPayslip(models.Model):
             't_tidak_tetap', 't_lain_lain', 't_jabatan', 't_insentif', 't_makan', 'sub_gross', 't_pph21', 
             'gross_wage', 'p_bpjs_jkk', 'p_bpjs_jkm', 'p_jht_employee', 'p_jht_comp', 'p_bpjs_kes_comp', 'p_bpjs_kes_emp', 
             'p_jp_company', 'p_jp_employee', 'p_meal', 'p_terlambat', 'p_pd', 'p_mp',
-            'p_pinjaman', 'p_gaji', 'p_potongan', 'p_pph21', 'net_wage'
+            'p_pinjaman', 'p_tunj_tidak_tetap', 'p_gaji', 'p_potongan', 'p_pph21', 'net_wage'
         ]
 
         # **Tulis header dengan merge dua baris hanya sampai kolom 10**
@@ -134,12 +144,12 @@ class HrPayslip(models.Model):
         col += 1
 
         # Potongan (header dengan colspan)
-        worksheet.merge_range(row, col, row, col + 13, "Potongan", potongan_header_style)
+        worksheet.merge_range(row, col, row, col + 14, "Potongan", potongan_header_style)
         # Sub-header untuk Potongan
         potongan_sub_headers = [
             '(P) BPJS JKK', '(P) BPJS JKM', '(P) JHT Employee', '(P) JHT Comp', '(P) BPJS Kesehatan Company', '(P) BPJS Kes Emp', 
             '(P) JP Company', '(P) JP Employee', '(P) Meal', '(P) Terlambat', '(P) Pulang Dini', '(P) Meninggalkan Pekerjaan',
-            '(P) Pinjaman', '(P) Potongan Gaji'
+            '(P) Pinjaman', '(P) Potongan Tidan Tetap', '(P) Potongan Gaji'
         ]
         for i, sub_header in enumerate(potongan_sub_headers):
             worksheet.write(row + 1, col + i, sub_header, potongan_header_style)
