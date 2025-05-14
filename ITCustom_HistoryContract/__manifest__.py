@@ -7,7 +7,8 @@
     'category': 'Payroll',
     'summary': 'Menambahkan menu All Report di Attendance',
     'data': [
-        'views/hr_history_contract_button.xml',
+        'security/ir.model.access.csv',
+        # 'views/hr_history_contract_button.xml',
         'views/hr_history_contract_views.xml',
     ],
     'installable': True,

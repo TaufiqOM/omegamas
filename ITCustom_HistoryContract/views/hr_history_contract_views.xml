@@ -1,5 +1,18 @@
-<!-- /Users/admin/Documents/odoo-18E/omegamas/ITCustom_HistoryContract/views/hr_history_contract_views.xml -->
+<!-- hr_history_contract_views.xml -->
 <odoo>
+    <!-- Tree view definition (wajib agar 'Add a line' bisa jalan) -->
+    <record id="view_contract_history_tree" model="ir.ui.view">
+        <field name="name">contract.history.employee.tree</field>
+        <field name="model">contract.history.employee</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="history_name"/>
+                <field name="history_start_date"/>
+                <field name="history_end_date"/>
+            </list>
+        </field>
+    </record>
+    <!-- Form Inherit: Tab Riwayat Kontrak di Form hr.contract -->
     <record id="view_contract_form_inherit_history_tab" model="ir.ui.view">
         <field name="name">hr.contract.form.inherit.history.tab</field>
         <field name="model">hr.contract</field>
@@ -7,21 +20,25 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
                 <page string="Riwayat Kontrak">
+                    <field name="history_ids" colspan="4" nolabel="1">
+                        <list editable="bottom">
+                            <field name="history_name" string="Nama Kontrak" />
+                            <field name="history_start_date" string="Mulai" />
+                            <field name="history_end_date" string="Selesai" />
+                            <field name="history_structure_type_id" string="Tipe Struktur" />
+                            <field name="history_department_id" string="Departemen" />
+                            <field name="history_job_id" string="Jabatan" />
+                            <field name="history_contract_type_id" string="Tipe Kontrak" />
+                            <field name="history_wage" string="Gaji" />
+                        </list>
+                    </field>
                     <group>
-                        <group string="Data History Saat Ini">
-                            <field name="history_name" readonly="1"/>
-                            <field name="history_start_date" readonly="1"/>
-                            <field name="history_end_date" readonly="1"/>
-                        </group>
-                        
-                        <!-- Tambahkan tombol Update History di dalam tab -->
-                        <group>
-                            <button name="action_update_history"
-                                    type="object"
-                                    string="Update History"
-                                    class="btn-primary"
-                                    icon="fa-refresh"/>
-                        </group>
+                        <!-- Tombol untuk update riwayat otomatis -->
+                        <button name="action_update_history"
+                                type="object"
+                                string="Update History"
+                                class="btn-primary"
+                                icon="fa-refresh"/>
                     </group>
                 </page>
             </xpath>
