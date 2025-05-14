@@ -10,6 +10,7 @@
         'security/ir.model.access.csv',
         # 'views/hr_history_contract_button.xml',
         'views/hr_history_contract_views.xml',
+        'views/contract_history_wizard_views.xml',
     ],
     'installable': True,
     'application': False,
