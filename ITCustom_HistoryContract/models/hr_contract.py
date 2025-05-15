@@ -41,7 +41,6 @@ class HrContract(models.Model):
             'history_department_id': self.department_id.id,
             'history_job_id': self.job_id.id,
             'history_contract_type_id': self.contract_type_id.id,
-            'history_wage': self.wage,
         }
 
         is_different = True  # Asumsikan beda
@@ -54,8 +53,7 @@ class HrContract(models.Model):
                 (last_history.history_structure_type_id.id or False) != current_data['history_structure_type_id'] or
                 (last_history.history_department_id.id or False) != current_data['history_department_id'] or
                 (last_history.history_job_id.id or False) != current_data['history_job_id'] or
-                (last_history.history_contract_type_id.id or False) != current_data['history_contract_type_id'] or
-                last_history.history_wage != current_data['history_wage']
+                (last_history.history_contract_type_id.id or False) != current_data['history_contract_type_id']
             )
 
         # Insert hanya jika data berbeda
@@ -65,3 +63,15 @@ class HrContract(models.Model):
                 **current_data
             })
             
+    def action_export_history(self):
+        self.ensure_one()
+        return {
+            'name': 'Export History Berdasarkan Periode',
+            'type': 'ir.actions.act_window',
+            'res_model': 'export.history.period.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_contract_id': self.id
+            }
+        }

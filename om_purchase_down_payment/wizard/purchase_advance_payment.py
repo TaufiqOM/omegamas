@@ -416,13 +416,13 @@ class PurchaseAdvancePaymentInv(models.TransientModel):
         purchases = Purchase.browse(self._context.get("active_ids", []))
 
 
-        if len(purchases) == 1 and self.amount > 0:
-            amount = self.amount
-            if self.advance_payment_method == "percentage":  # Case percent
-                amount = self.amount / 100 * purchases.amount_untaxed
-            purchases.write({
-                'dp_blanket' : purchases.dp_blanket + amount
-            })
+        # if len(purchases) == 1 and self.amount > 0:
+        #     amount = self.amount
+        #     if self.advance_payment_method == "percentage":  # Case percent
+        #         amount = self.amount / 100 * purchases.amount_untaxed
+        #     purchases.write({
+        #         'dp_blanket' : purchases.dp_blanket + amount
+        #     })
 
         # Create deposit product if necessary
         product = self.purchase_deposit_product_id
@@ -450,6 +450,19 @@ class PurchaseAdvancePaymentInv(models.TransientModel):
             )
 
         PurchaseLine = self.env["purchase.order.line"]
+        # Menambahkan validasi DP
+        for order in purchases:
+            # Hitung jumlah yang akan diinvoice
+            if self.advance_payment_method == "percentage":
+                amount = self.amount / 100 * order.amount_untaxed
+            else:
+                amount = self.amount
+
+            # VALIDASI: Jika amount melebihi total PO
+            if amount > order.amount_total:
+                raise UserError(_(
+                    "The deposit amount exceeds the total order amount."
+                ))
         
         if self.count > 1: 
             self._process_create_invoices_dp(purchases, product, PurchaseLine)

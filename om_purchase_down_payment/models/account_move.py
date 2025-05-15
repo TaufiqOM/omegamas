@@ -42,8 +42,9 @@ class AccountMove(models.Model):
         for line in self.line_ids:
             if not line.purchase_line_id.is_deposit:
                 continue
-            line.purchase_line_id.taxes_id = line.tax_ids
-            line.purchase_line_id.price_unit = line.price_unit
+            # Supaya tidak menambahkan price pada line purchase
+            # line.purchase_line_id.taxes_id = line.tax_ids
+            # line.purchase_line_id.price_unit = line.price_unit
         
         for rec in self:
             purchases = self.env['purchase.order'].search([('invoice_ids', 'in', [rec.id])])
@@ -55,7 +56,7 @@ class AccountMove(models.Model):
                     
                     if purchase and rec.is_deposit:
                         depo_product = rec.invoice_line_ids.filtered(lambda x: x.is_deposit and x.purchase_line_id.order_id.id == purchase.id)
-                        purchase.dp_blanket = depo_product.price_unit
+                        purchase.dp_blanket += depo_product.price_unit
         return res
 
     def unlink(self):

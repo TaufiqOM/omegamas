@@ -109,10 +109,11 @@ class BlanketOrderWizard(models.TransientModel):
 
     @api.depends('line_ids')
     def _compute_dp_blanket(self):
-        if self.line_ids[0].blanket_line_id.order_id.dp_sisa == 0:
-            self.dp_blanket = self.line_ids[0].blanket_line_id.order_id.down_payment
-        else:
-            self.dp_blanket = self.line_ids[0].blanket_line_id.order_id.dp_sisa
+        self.dp_blanket = self.line_ids[0].blanket_line_id.order_id.dp_sisa
+        # if self.line_ids[0].blanket_line_id.order_id.dp_sisa == 0:
+        #     self.dp_blanket = self.line_ids[0].blanket_line_id.order_id.dp_sisa
+        # else:
+        #     self.dp_blanket = self.line_ids[0].blanket_line_id.order_id.down_payment
 
 
     @api.onchange('dp_order', 'dp_blanket')

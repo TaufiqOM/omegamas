@@ -90,7 +90,38 @@ class ManualDelivery(models.TransientModel):
     def confirm(self):
         """Creates the manual procurements"""
         self.ensure_one()
+        sale_orders = self.line_ids.mapped("order_line_id.order_id")
+        picking_before = sale_orders.mapped("picking_ids")
         sale_order_lines = self.line_ids.mapped("order_line_id")
         sale_order_lines.with_context(
             om_sale_manual_delivery=self
         )._action_launch_stock_rule_manual()
+
+        # Ambil picking setelah trigger dan cari yang baru
+        picking_after = sale_orders.mapped("picking_ids")
+        new_picking = (picking_after - picking_before).filtered(lambda p: p.state not in ('done', 'cancel'))
+
+        if new_picking:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': 'Delivery Order',
+                'res_model': 'stock.picking',
+                'view_mode': 'form',
+                'res_id': new_picking.id,
+                'target': 'current',
+            }
+        else:
+            # fallback: cari picking aktif yang mungkin sudah ada sebelumnya
+            fallback_picking = picking_after.filtered(lambda p: p.state not in ('done', 'cancel'))
+            if len(fallback_picking) == 1:
+                return {
+                    'type': 'ir.actions.act_window',
+                    'name': 'Delivery Order',
+                    'res_model': 'stock.picking',
+                    'view_mode': 'form',
+                    'res_id': fallback_picking.id,
+                    'target': 'current',
+                }
+
+        # Kalau tidak ada picking sama sekali
+        return {'type': 'ir.actions.act_window_close'}

@@ -1,0 +1,30 @@
+<!-- /Users/admin/Documents/odoo-18E/omegamas/ITCustom_Barcode/views/alokasi_views.xml -->
+<odoo>
+    <record id="view_barcode_produksi_tree" model="ir.ui.view">
+        <field name="name">barcode.produksi.tree</field>
+        <field name="model">barcode.produksi</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="order_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_barcode_produksi_form" model="ir.ui.view">
+        <field name="name">barcode.produksi.form</field>
+        <field name="model">barcode.produksi</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title" style="margin-bottom: 30px;">
+                        <h1>
+                            <field name="order_id" required="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <field name="barcode_image" widget="image" class="oe_avatar"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

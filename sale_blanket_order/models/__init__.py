@@ -3,6 +3,7 @@ from . import (
     sale_orders,
     sale_config_settings,
     res_company,
-    account_invoice
+    account_invoice,
+    sale_report
 )
 

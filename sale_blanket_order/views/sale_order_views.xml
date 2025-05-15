@@ -12,6 +12,20 @@
         </field>
     </record> -->
 
+        <record id="sale_report_view_tree_inherit" model="ir.ui.view">
+            <field name="name">sale.report.view.tree.inherit</field>
+            <field name="model">sale.report</field>
+            <field name="inherit_id" ref="sale.sale_report_view_tree"/>
+            <field name="arch" type="xml">
+                 <field name="product_uom_qty" position="after">
+                    <field name="dp_blanket" optional="show"/>
+                    <field name="dp_order" optional="show"/>
+                    <field name="dp_sisa" optional="show"/>
+                </field>
+               
+            </field>
+        </record>
+
     <record id="inherit_view_id_inherit_sale_stock" model="ir.ui.view">
         <field name="name">sale.order.view.form.inherit</field>
         <field name="model">sale.order</field>
@@ -25,6 +39,7 @@
             </xpath>
         </field>
     </record>
+    
 
     <record id="view_sale_order_form" model="ir.ui.view">
         <field name="name">sale.order.form.inherit</field>

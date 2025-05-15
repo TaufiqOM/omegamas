@@ -9,7 +9,6 @@ class HrContractHistory(models.Model):
     history_name = fields.Char(string="History Name")
     history_start_date = fields.Date(string="History Start Date")
     history_end_date = fields.Date(string="History End Date")
-    history_wage = fields.Float(string="History End Date")
 
     # Tambahan field Many2one dari hr.contract
     history_structure_type_id = fields.Many2one(
@@ -27,7 +26,12 @@ class HrContractHistory(models.Model):
         string="Job Position"
     )
 
-    history_contract_type_id = fields.Many2one(
-        'hr.contract.type',
-        string="Contract Type"
-    )
+    status = fields.Selection([
+        ('pkwt', 'PKWT'),
+        ('perpanjangan_pkwt', 'Perpanjangan PKWT'),
+        ('resign', 'Resign'),
+        ('habis_kontrak', 'Habis Kontrak'),
+        ('permanent', 'Permanent')
+    ], string='Status Kontrak')
+    
+    keterangan = fields.Text(string='Keterangan')

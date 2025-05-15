@@ -104,6 +104,7 @@
                         <list editable="bottom" create="0" delete="0">
                            <field name="advance_payment_id" column_invisible="1"/>
                             <field name="sale_id"/>
+                            <field name="client_order_ref"/>
                             <field name="dp_blanket"/>
                             <field name="dp_sisa" readonly="1"/>
                             <field name="dp_order" column_invisible="parent.advance_payment_method == 'percentage'"/>

@@ -29,7 +29,7 @@
                         <field name="product_id" />
                         <field name="partner_id" />
                         <field name="date_planned" />
-                        <field name="price_unit" />
+<!--                         <field name="price_unit" /> -->
                         <field name="product_qty" string="Ordered Qty" />
                         <field name="existing_qty" string="Existing Qty" />
                         <field name="remaining_qty" string="Remaining Qty" />

@@ -15,6 +15,11 @@ class SaleAdvancePaymentInvLine(models.TransientModel):
     dp_blanket = fields.Float('Down Payment', related='sale_id.dp_blanket')
     dp_order = fields.Float(string="Order Down Payment")
     dp_sisa = fields.Float(string="Remaining Down Payment", related='sale_id.dp_sisa')
+    client_order_ref = fields.Char(
+        string="Customer Reference",
+        related='sale_id.client_order_ref',
+        readonly=True
+    )
 
     # advance_payment_method = fields.Selection(
     #     selection=[

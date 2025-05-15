@@ -114,7 +114,7 @@
       <field name="inherit_id" ref="account.view_in_invoice_bill_tree"/>
       <field name="arch" type="xml">
         <xpath expr="//field[@name='currency_id']" position="after">
-          <field name="amount_move_to_paid" />
+<!--           <field name="amount_move_to_paid" /> -->
         </xpath>
       </field>
     </record>

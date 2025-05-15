@@ -28,8 +28,8 @@
                             <field name="history_structure_type_id" string="Tipe Struktur" />
                             <field name="history_department_id" string="Departemen" />
                             <field name="history_job_id" string="Jabatan" />
-                            <field name="history_contract_type_id" string="Tipe Kontrak" />
-                            <field name="history_wage" string="Gaji" />
+                            <field name="status" string="Status" />
+                            <field name="keterangan" string="Keterangan" />
                         </list>
                     </field>
                     <group>
@@ -39,9 +39,32 @@
                                 string="Update History"
                                 class="btn-primary"
                                 icon="fa-refresh"/>
+                        <!-- Tombol Export Excel -->
+                        <button name="action_export_history"
+                                type="object"
+                                string="Export Excel"
+                                class="btn-secondary"
+                                icon="fa-download"/>
                     </group>
                 </page>
             </xpath>
+        </field>
+    </record>
+    <record id="view_export_history_period_wizard_form" model="ir.ui.view">
+        <field name="name">export.history.period.wizard.form</field>
+        <field name="model">export.history.period.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Export Riwayat Kontrak">
+                <group>
+                    <field name="contract_id" readonly="1"/>
+                    <field name="start_date"/>
+                    <field name="end_date"/>
+                </group>
+                <footer>
+                    <button string="Export Excel" type="object" name="action_export_excel" class="btn-primary"/>
+                    <button string="Batal" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
         </field>
     </record>
 </odoo>

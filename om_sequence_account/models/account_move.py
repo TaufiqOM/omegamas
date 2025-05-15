@@ -72,7 +72,8 @@ class AccountMove(models.Model):
             ``format.format(**format_values)`` should be equal to ``previous``
         """
         sequence_number_reset = self._deduce_sequence_number_reset(previous)
-        regex = self._sequence_fixed_regex
+        # regex = self._sequence_fixed_regex
+        regex = r'(?P<prefix1>\w+/\w+)\s(?P<year>\d{2})/(?P<month>\d{2})/(?P<seq>\d+)$'
         if sequence_number_reset == 'year':
             regex = self._sequence_yearly_regex
         elif sequence_number_reset == 'year_range':
@@ -82,8 +83,11 @@ class AccountMove(models.Model):
         elif sequence_number_reset == 'year_range_month':
             regex = self._sequence_year_range_monthly_regex
         format_values = re.match(regex, previous).groupdict()
-        format_values['seq_length'] = len(format_values['seq'])
-        format_values['year_length'] = len(format_values.get('year') or '')
+        # format_values['seq_length'] = len(format_values['seq'])
+        format_values['seq_length'] = 3
+        format_values['year'] = int(str(self.date.year)[-2:]) if self.date else int(str(format_values['year'])[-2:])
+        # format_values['year_length'] = len(format_values.get('year') or '')
+        format_values['year_length'] = 2
         format_values['year_end_length'] = len(format_values.get('year_end') or '')
         if not format_values.get('seq') and 'prefix1' in format_values and 'suffix' in format_values:
             # if we don't have a seq, consider we only have a prefix and not a suffix
@@ -95,15 +99,19 @@ class AccountMove(models.Model):
         if self.journal_id.code == 'STJ' and self.ref:
             ref = self.ref.split(' - ')[0]
             stock = self.env['stock.picking'].search([('name', '=', ref)], limit=1)
+            format_values['prefix1'] = format_values['prefix1'].split('/')[0] + '/'  # Riset Format
             if stock and stock.picking_type_id.code == 'outgoing':
-                format_values['prefix1'] = format_values['prefix1'].split('/')[0] + '/' + 'DO/'
+                # format_values['prefix1'] = format_values['prefix1'].split('/')[0] + '/' + 'DO/'
+                format_values['prefix1'] += 'DO '  # Jika outgoing
             if stock and stock.picking_type_id.code == 'incoming':
                 # format_values['prefix1'] = format_values['prefix1'] + 'TTB/'
-                format_values['prefix1']= format_values['prefix1'].split('/')[0] + '/' + 'TTB/'
+                # format_values['prefix1']= format_values['prefix1'].split('/')[0] + '/' + 'TTB/'
+                format_values['prefix1'] += 'TTB '  # Jika incoming
             mo = self.env['mrp.production'].search([('name', '=', ref)], limit=1)
             if mo:
                 # format_values['prefix1'] = format_values['prefix1'] + 'PBP/'
-                format_values['prefix1'] = format_values['prefix1'].split('/')[0] + '/' + 'PBP/'
+                # format_values['prefix1'] = format_values['prefix1'].split('/')[0] + '/' + 'PBP/'
+                format_values['prefix1'] += 'PBP '  # Jika produksi
 
         placeholders = re.findall(r'\b(prefix\d|seq|suffix\d?|year|year_end|month)\b', regex)
         format = ''.join(

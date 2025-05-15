@@ -189,9 +189,15 @@ class SaleBlanketAdvancePaymentInv(models.TransientModel):
         sale_blanket_order_ids = self.env['sale.blanket.order'].browse(self._context.get('active_ids'))
         for order in sale_blanket_order_ids:
             if self.advance_payment_method == 'fixed':
-                order.down_payment += self.fixed_amount
+                order.down_payment = self.fixed_amount
             elif self.advance_payment_method == 'percentage':
-                order.down_payment += (self.amount / 100.0) * order.amount_total
+                order.down_payment = (self.amount / 100.0) * order.amount_total
+
+            # Validasi: Jangan sampai total down_payment melebihi total order
+            if order.down_payment + deposit_amount > order.amount_total:
+                raise UserError(_(
+                    "The deposit amount exceeds the total order amount."
+                ))
         invoices = self._create_invoices(self.sale_blanket_order_ids)
         return self.sale_blanket_order_ids.action_view_invoice(invoices=invoices)
 
