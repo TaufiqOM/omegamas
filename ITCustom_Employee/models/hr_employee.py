@@ -47,3 +47,7 @@ class Employee(models.Model):
     _sql_constraints = [
         ('unique_npwp', 'UNIQUE(npwp)', 'NPWP harus unik. Sudah digunakan sebelumnya.')
     ]
+    
+    def surat_peringatan_action(self):
+        # Fungsi ini sengaja dikosongkan untuk sekarang
+        pass

@@ -1,3 +1,4 @@
+<!-- /Users/admin/Documents/odoo-18E/omegamas/ITCustom_Pengobatan/views/alokasi_views.xml -->
 <odoo>
     <record id="view_pengobatan_alokasi_tree" model="ir.ui.view">
         <field name="name">pengobatan.alokasi.tree</field>
