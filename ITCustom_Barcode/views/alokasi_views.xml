@@ -14,6 +14,12 @@
         <field name="model">barcode.produksi</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="open_generate_wizard"
+                            type="object"
+                            string="Generate Barcode"
+                            class="oe_highlight"/>
+                </header>
                 <sheet>
                     <div class="oe_title" style="margin-bottom: 30px;">
                         <h1>
@@ -23,6 +29,18 @@
                     <group>
                         <field name="barcode_image" widget="image" class="oe_avatar"/>
                     </group>
+                    <notebook>
+                        <page string="Produk dalam Order">
+                            <field name="product_line_ids" nolabel="1">
+                                <list editable="bottom">
+                                    <field name="product_template_id" string="Produk" readonly="1" width="25%"/>
+                                    <field name="product_uom_qty" string="Total" readonly="1" width="25%"/>
+                                    <field name="sudah_generate" string="Sudah Generate" readonly="1" width="25%"/>
+                                    <field name="belum_generate" string="Belum Generate" readonly="1" width="25%"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

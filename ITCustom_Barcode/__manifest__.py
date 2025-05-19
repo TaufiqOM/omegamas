@@ -18,6 +18,7 @@
         'views/alokasi_views.xml',
         'views/actions.xml',
         'views/menus.xml',
+        'views/barcode_wizard_view.xml',
     ],
     
     'installable': True,
