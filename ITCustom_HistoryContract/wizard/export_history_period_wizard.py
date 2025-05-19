@@ -64,10 +64,9 @@ class ExportHistoryPeriodWizard(models.TransientModel):
 
         # HEADER TABEL (baris ke-4, index = 3)
         headers = [
-            'Barcode Karyawan', 'Nama Karyawan',
-            'Nama Kontrak', 'Tanggal Mulai', 'Tanggal Selesai',
-            'Struktur Gaji', 'Departemen', 'Jabatan', 'Tipe Kontrak',
-            'Status', 'Keterangan'
+            'Nomor Karyawan', 'Nama Karyawan',
+            'Nama Kontrak', 'Tipe Karyawan', 'Departemen', 'Jabatan',
+            'Tanggal Mulai', 'Tanggal Selesai', 'Status', 'Keterangan'
         ]
         for col_num, header in enumerate(headers):
             sheet.write(3, col_num, header, header_format)
@@ -75,17 +74,18 @@ class ExportHistoryPeriodWizard(models.TransientModel):
         # ISI DATA mulai dari baris ke-5 (index = 4)
         for row_num, record in enumerate(history_records, start=4):
             employee = record.contract_id.employee_id
+            status_selection = dict(record._fields['status'].selection)
+            status_display = status_selection.get(record.status, '')
             sheet.write(row_num, 0, employee.barcode or '', cell_format)
             sheet.write(row_num, 1, employee.name or '', cell_format)
             sheet.write(row_num, 2, record.history_name or '', cell_format)
-            sheet.write(row_num, 3, str(record.history_start_date or ''), cell_format)
-            sheet.write(row_num, 4, str(record.history_end_date or ''), cell_format)
-            sheet.write(row_num, 5, record.history_structure_type_id.name or '', cell_format)
-            sheet.write(row_num, 6, record.history_department_id.name or '', cell_format)
-            sheet.write(row_num, 7, record.history_job_id.name or '', cell_format)
-            sheet.write(row_num, 8, record.history_contract_type_id.name or '', cell_format)
-            sheet.write(row_num, 9, record.status or '', cell_format)
-            sheet.write(row_num, 10, record.keterangan or '', cell_format)
+            sheet.write(row_num, 3, record.history_structure_type_id.name or '', cell_format)
+            sheet.write(row_num, 4, record.history_department_id.name or '', cell_format)
+            sheet.write(row_num, 5, record.history_job_id.name or '', cell_format)
+            sheet.write(row_num, 6, record.history_start_date.strftime('%d-%m-%Y') if record.history_start_date else '', cell_format)
+            sheet.write(row_num, 7, record.history_end_date.strftime('%d-%m-%Y') if record.history_end_date else '', cell_format)
+            sheet.write(row_num, 8, status_display, cell_format)
+            sheet.write(row_num, 9, record.keterangan or '', cell_format)
 
         # SET LEBAR KOLOM
         for col in range(11):

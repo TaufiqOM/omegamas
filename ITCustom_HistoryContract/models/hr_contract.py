@@ -40,7 +40,6 @@ class HrContract(models.Model):
             'history_structure_type_id': self.structure_type_id.id,
             'history_department_id': self.department_id.id,
             'history_job_id': self.job_id.id,
-            'history_contract_type_id': self.contract_type_id.id,
         }
 
         is_different = True  # Asumsikan beda
@@ -52,8 +51,7 @@ class HrContract(models.Model):
                 last_history.history_end_date != current_data['history_end_date'] or
                 (last_history.history_structure_type_id.id or False) != current_data['history_structure_type_id'] or
                 (last_history.history_department_id.id or False) != current_data['history_department_id'] or
-                (last_history.history_job_id.id or False) != current_data['history_job_id'] or
-                (last_history.history_contract_type_id.id or False) != current_data['history_contract_type_id']
+                (last_history.history_job_id.id or False) != current_data['history_job_id']
             )
 
         # Insert hanya jika data berbeda

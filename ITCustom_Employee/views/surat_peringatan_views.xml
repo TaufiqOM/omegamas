@@ -80,7 +80,7 @@
     </record>
     <!-- Then create the new window action -->
     <record id="action_export_employee_surat_peringatan" model="ir.actions.act_window">
-        <field name="name">Export Klaim</field>
+        <field name="name">Export Pelanggaran</field>
         <field name="res_model">export.employee.surat.peringatan.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
