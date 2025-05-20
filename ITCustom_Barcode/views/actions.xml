@@ -1,3 +1,4 @@
+<!-- omegamas/ITCustom_Barcode/views/actions.xml -->
 <odoo>
     <record id="action_barcode_produksi" model="ir.actions.act_window">
         <field name="name">Barcode Produksi</field>
@@ -7,6 +8,11 @@
     <record id="action_barcode_produksi" model="ir.actions.act_window">
         <field name="name">Produk</field>
         <field name="res_model">barcode.produksi</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_barcode_barcode" model="ir.actions.act_window">
+        <field name="name">Barcode</field>
+        <field name="res_model">barcode.produksi.subkode</field>
         <field name="view_mode">list,form</field>
     </record>
 </odoo>

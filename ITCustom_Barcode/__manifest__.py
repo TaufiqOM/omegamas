@@ -9,9 +9,7 @@
     'license': 'LGPL-3', 
     'author': 'Taufiqur Rahman',
     'website': 'http://www.omegamas.com',
-    'depends': [
-        'base', 'sale',
-    ],
+    'depends': ['base', 'sale', 'product'],
     'data': [
         
         'security/ir.model.access.csv',
@@ -19,6 +17,8 @@
         'views/actions.xml',
         'views/menus.xml',
         'views/barcode_wizard_view.xml',
+        'views/barcode_views.xml',
+        # 'views/generate_barcode_wizard_view.xml',
     ],
     
     'installable': True,

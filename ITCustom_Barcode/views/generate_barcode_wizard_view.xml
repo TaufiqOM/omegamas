@@ -1,0 +1,29 @@
+<!-- omegamas/ITCustom_Barcode/views/generate_barcode_wizard_view.xml -->
+<odoo>
+    <record id="view_generate_barcode_wizard_form" model="ir.ui.view">
+        <field name="name">generate.barcode.wizard.form</field>
+        <field name="model">generate.barcode.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Barcode">
+                <sheet>
+                    <group>
+                        <field name="produk_id"/>
+                        <field name="jumlah"/>
+                    </group>
+                    <footer>
+                        <button name="action_generate_barcode" string="Generate Barcode" type="object" class="btn-primary"/>
+                        <button string="Batal" special="cancel" class="btn-secondary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_generate_barcode_wizard" model="ir.actions.act_window">
+        <field name="name">Generate Barcode</field>
+        <field name="res_model">generate.barcode.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_generate_barcode_wizard_form"/>
+    </record>
+</odoo>

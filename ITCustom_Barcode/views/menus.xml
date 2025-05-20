@@ -4,5 +4,6 @@
               web_icon="ITCustom_Barcode,static/description/icon.png"/>
 
     <menuitem id="menu_barcode_produksi" name="Produk" parent="menu_barcode_management" action="action_barcode_produksi" sequence="12"/>
+    <menuitem id="menu_barcode_barcode" name="Barcode" parent="menu_barcode_management" action="action_barcode_barcode" sequence="13"/>
 
 </odoo>

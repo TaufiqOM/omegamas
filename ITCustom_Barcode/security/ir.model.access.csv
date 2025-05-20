@@ -4,3 +4,4 @@ access_barcode_produksi_line_user,access.barcode.produksi.line.user,model_barcod
 access_barcode_produksi_wizard,access.barcode.produksi.wizard,model_barcode_produksi_wizard,,1,1,1,1
 access_barcode_produksi_wizard_line,access.barcode.produksi.wizard.line,model_barcode_produksi_wizard_line,,1,1,1,1
 access_barcode_produksi_subkode_user,access.barcode.produksi.subkode.user,model_barcode_produksi_subkode,base.group_user,1,1,1,1
+access_generate_barcode_wizard,access_generate_barcode_wizard,model_generate_barcode_wizard,,1,1,1,1

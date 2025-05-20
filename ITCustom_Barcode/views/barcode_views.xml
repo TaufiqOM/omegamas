@@ -1,0 +1,44 @@
+<!-- omegamas/ITCustom_Barcode/views/barcode_views.xml -->
+<odoo>
+    <record id="view_barcode_barcode_tree" model="ir.ui.view">
+        <field name="name">barcode.barcode.tree</field>
+        <field name="model">barcode.produksi.subkode</field>
+        <field name="arch" type="xml">
+            <list string="Subkode Barcode Produksi" default_group_by="kode">
+                <header>
+                    <button name="action_generate_barcode_direct" string="Generate Barcode" type="object" class="btn-primary"/>
+                </header>
+                <field name="kode"/>
+                <field name="name"/>
+                <field name="order_id"/>
+                <field name="produk_id"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_barcode_barcode_form" model="ir.ui.view">
+        <field name="name">barcode.barcode.form</field>
+        <field name="model">barcode.produksi.subkode</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title" style="margin-bottom: 30px;">
+                        <h1>
+                            <field name="order_id" required="1"/>
+                        </h1>
+                    </div>
+                    <notebook>
+                        <page string="Produk dalam Order">
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_generate_barcode_wizard" model="ir.actions.act_window">
+        <field name="name">Generate Barcode Wizard</field>
+        <field name="res_model">generate.barcode.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
