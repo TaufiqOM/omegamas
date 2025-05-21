@@ -9,10 +9,9 @@ class BarcodeProduksiLine(models.Model):
     product_template_id = fields.Many2one('product.template', string='Produk')
     product_uom_qty = fields.Float(string='Quantity', readonly=True)
     produksi_id = fields.Many2one('barcode.produksi', string='Barcode Produksi', ondelete='cascade')
-    sudah_generate = fields.Integer(string="Sudah Generate", compute="_compute_generate_counts", store=True)
-    belum_generate = fields.Integer(string="Belum Generate", compute="_compute_generate_counts", store=True)
+    sudah_generate = fields.Integer(string="Sudah Generate", compute="_compute_generate_counts", store=False)
+    belum_generate = fields.Integer(string="Belum Generate", compute="_compute_generate_counts", store=False)
 
-    
     @api.depends('produksi_id.order_id', 'product_template_id', 'product_uom_qty')
     def _compute_generate_counts(self):
         for line in self:

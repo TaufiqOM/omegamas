@@ -8,12 +8,15 @@
                 <group>
                     <notebook>
                         <page string="Produk dalam Order">
+                            <!-- Hidden field for parent record -->
                             <field name="produksi_id" invisible="1"/>
+                            <!-- Line items list -->
                             <field name="line_ids">
                                 <list editable="bottom" create="0">
-                                    <field name="produksi_line_id" invisible="1"/>
+                                    <field name="produksi_line_id"/>
                                     <field name="product_template_id"/>
                                     <field name="product_uom_qty"/>
+                                    <field name="jumlah_generate"/>
                                 </list>
                             </field>
                         </page>
