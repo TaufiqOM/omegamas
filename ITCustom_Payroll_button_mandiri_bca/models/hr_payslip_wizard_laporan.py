@@ -1,3 +1,4 @@
+# /Users/admin/Documents/odoo-18E/omegamas/ITCustom_Payroll_button_mandiri_bca/models/hr_payslip_wizard_laporan.py
 from odoo import models, fields, api
 
 class HrPayslipWizard(models.TransientModel):
@@ -5,17 +6,21 @@ class HrPayslipWizard(models.TransientModel):
     _description = 'Wizard Export Laporan'
 
     export_date = fields.Date(string="Tanggal Pembayaran", required=True, default=fields.Date.context_today)
+    export_type = fields.Selection([
+        ('excel', 'Excel'),
+        ('pdf', 'PDF')
+    ], string="Jenis File", required=True, default='excel')
 
     def action_confirm(self):
-        """
-        Method yang dijalankan saat tombol Export di wizard ditekan.
-        Menyimpan tanggal yang dipilih ke context dan memanggil method export_to_laporan.
-        """
         active_ids = self.env.context.get('active_ids', [])
         payslips = self.env['hr.payslip'].browse(active_ids)
 
-        # Simpan export_date ke context agar bisa digunakan di method export_to_laporan
-        self.env.context = dict(self.env.context, export_date=self.export_date)
+        export_date = self.export_date
+        export_type = self.export_type
 
-        # Panggil method export_to_laporan untuk mengekspor data ke Excel
-        return payslips.export_to_laporan(self.export_date)
+        if export_type == 'excel':
+            return payslips.export_to_laporan(export_date)
+        elif export_type == 'pdf':
+            return payslips.export_to_laporan_pdf(export_date)  # <-- kamu bisa buat method ini nanti
+        
+
