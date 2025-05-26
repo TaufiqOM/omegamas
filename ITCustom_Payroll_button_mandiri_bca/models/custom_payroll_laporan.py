@@ -10,10 +10,11 @@ from io import BytesIO
 from reportlab.lib.pagesizes import landscape, A3
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-from reportlab.lib.enums import TA_LEFT
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.lib.units import cm
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import KeepTogether
 import base64
 
 class HrPayslip(models.Model):
@@ -261,68 +262,69 @@ class HrPayslip(models.Model):
             'target': 'self',
         }
 
-    # Update the export_to_laporan_pdf method in custom_payroll_laporan.py
     def export_to_laporan_pdf(self, export_date=None):
         """
-        Method untuk mengekspor data payslip ke dalam file PDF dengan komponen yang sama persis seperti Excel.
+        Method untuk mengekspor data payslip ke dalam file PDF dengan:
+        - Penataan kolom yang lebih terstruktur seperti Excel
+        - Grup kolom yang logis (Pendapatan, Potongan, dll)
+        - Warna header yang membedakan grup
         """
         if not export_date:
             export_date = fields.Date.context_today(self)
 
         buffer = io.BytesIO()
 
-        # Buat dokumen PDF ukuran landscape A3
+        # Buat dokumen PDF ukuran landscape A3 dengan margin kecil
         doc = SimpleDocTemplate(
             buffer,
             pagesize=landscape(A3),
-            rightMargin=1*cm,
-            leftMargin=1*cm,
-            topMargin=1*cm,
-            bottomMargin=1*cm
+            rightMargin=0.5*cm,
+            leftMargin=0.5*cm,
+            topMargin=0.5*cm,
+            bottomMargin=0.5*cm
         )
 
         elements = []
         styles = getSampleStyleSheet()
         
-        # Custom styles
+        # Custom styles dengan font kecil tapi readable
         wrap_style = ParagraphStyle(
             name='Wrapped',
             parent=styles['Normal'],
             alignment=TA_LEFT,
-            fontSize=8,
-            spaceAfter=6
+            fontSize=5,
+            leading=5,
+            spaceAfter=1
         )
         
         header_style = ParagraphStyle(
             name='Header',
             parent=styles['Normal'],
-            alignment=TA_LEFT,
-            fontSize=8,
+            alignment=TA_CENTER,
+            fontSize=5,
             textColor=colors.black,
-            spaceAfter=6,
-            fontName='Helvetica-Bold'
+            spaceAfter=1,
+            fontName='Helvetica-Bold',
+            leading=5
         )
         
-        tunjangan_header_style = ParagraphStyle(
-            name='TunjanganHeader',
-            parent=header_style,
-            backColor=colors.HexColor('#D3D3D3')
-        )
-        
-        potongan_header_style = ParagraphStyle(
-            name='PotonganHeader',
-            parent=header_style,
-            backColor=colors.HexColor('#FFCCCB')
-        )
+        # Warna untuk grup kolom berbeda
+        group_colors = {
+            'info': colors.HexColor('#D9E1F2'),  # Biru muda untuk info karyawan
+            'pendapatan': colors.HexColor('#E2EFDA'),  # Hijau muda untuk pendapatan
+            'tunjangan': colors.HexColor('#FFF2CC'),  # Kuning muda untuk tunjangan
+            'potongan': colors.HexColor('#FCE4D6'),  # Oranye muda untuk potongan
+            'pajak': colors.HexColor('#F4B084'),  # Oranye lebih tua untuk pajak
+            'total': colors.HexColor('#BDD7EE'),  # Biru untuk total
+        }
 
-        # Dictionary nama bulan dalam Bahasa Indonesia
+        # Format tanggal
         bulan_dict = {
             '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
             '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
             '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
         }
 
-        # Format tanggal dengan jam dan menit otomatis dalam WIB
         if export_date:
             bulan = export_date.strftime('%m')
             bulan_text = bulan_dict.get(bulan, 'Tidak Valid')
@@ -334,177 +336,279 @@ class HrPayslip(models.Model):
             current_time = datetime.now(jakarta_tz).strftime('%H:%M')
             formatted_date = datetime.today().strftime('%d %B %Y') + f' {current_time} WIB'
 
-        # Ambil batch name dari payslip
+        # Header laporan
         batch_name = self[0].payslip_run_id.name if self[0].payslip_run_id else "Gaji Karyawan"
-
-        # Tambahkan informasi laporan
-        elements.append(Paragraph(f"Periode Penggajian: {batch_name}", wrap_style))
-        elements.append(Paragraph("Referensi Mata Uang: Pajak", wrap_style))
-        elements.append(Paragraph(f"Tanggal: {formatted_date}", wrap_style))
-        elements.append(Paragraph("<br/><br/>", wrap_style))  # Spasi
-
-        # Header tabel
-        headers_main = [
-            "Nomor", "Nama Karyawan", "No. Karyawan", "Posisi", "Departemen", 
-            "Golongan", "Status Kepegawaian", "Tanggal Bergabung", 
-            "Tanggal Berhenti", "Lama Kerja", "Status Pajak"
-        ]
         
-        # Daftar field dengan optional="show" dari XML
-        optional_show_fields = [
-            'basic_wage', 't_jkm', 't_jkk', 't_jht_comp', 't_bpjs_kesehatan', 't_jp_company', 
-            't_tidak_tetap', 't_lain_lain', 't_jabatan', 't_insentif', 't_makan', 'sub_gross', 't_pph21', 
-            'gross_wage', 'p_bpjs_jkk', 'p_bpjs_jkm', 'p_jht_employee', 'p_jht_comp', 'p_bpjs_kes_comp', 'p_bpjs_kes_emp', 
-            'p_jp_company', 'p_jp_employee', 'p_meal', 'p_terlambat', 'p_pd', 'p_mp',
-            'p_pinjaman', 'p_tunj_tidak_tetap', 'p_gaji', 'p_potongan', 'p_pph21', 'net_wage'
-        ]
+        elements.append(Paragraph(f"<b>LAPORAN PERHITUNGAN GAJI - {batch_name}</b>", 
+                                ParagraphStyle(name='Title', fontSize=7, alignment=TA_CENTER)))
+        elements.append(Paragraph(f"<b>Tanggal Cetak:</b> {formatted_date}", 
+                                ParagraphStyle(name='Subtitle', fontSize=5, alignment=TA_CENTER)))
+        elements.append(Spacer(1, 0.5*cm))
+
+        # ===================== STRUCTURED TABLE LAYOUT =====================
         
-        # Buat struktur data untuk tabel
+        # Data untuk tabel
         data = []
         
-        # Baris header pertama (merge beberapa kolom)
+        # 1. HEADER UTAMA (GROUP HEADERS)
         header_row1 = []
         
-        # Header utama (kolom 1-11)
-        for h in headers_main[:11]:
-            header_row1.append(Paragraph(h, header_style))
+        # Grup Informasi Karyawan (11 kolom)
+        header_row1.append(Paragraph("INFORMASI KARYAWAN", 
+                                ParagraphStyle(name='GroupHeader', fontSize=5, 
+                                                alignment=TA_CENTER, 
+                                                backColor=group_colors['info'])))
+        header_row1.extend([''] * 10)  # Placeholder untuk colspan
         
-        # Basic Wage
-        header_row1.append(Paragraph("Basic Wage", header_style))
+        # Grup Pendapatan (1 kolom)
+        header_row1.append(Paragraph("GAJI POKOK", 
+                                ParagraphStyle(name='GroupHeader', fontSize=5, 
+                                                alignment=TA_CENTER, 
+                                                backColor=group_colors['pendapatan'])))
         
-        # Tunjangan (merge 10 kolom)
-        header_row1.append(Paragraph("Tunjangan", tunjangan_header_style))
+        # Grup Tunjangan (10 kolom)
+        header_row1.append(Paragraph("TUNJANGAN", 
+                                ParagraphStyle(name='GroupHeader', fontSize=5, 
+                                                alignment=TA_CENTER, 
+                                                backColor=group_colors['tunjangan'])))
         header_row1.extend([''] * 9)  # Placeholder untuk colspan
         
-        # Total Pendapatan, Tunjangan Pajak, Gaji Kotor
-        header_row1.append(Paragraph("Total Pendapatan", header_style))
-        header_row1.append(Paragraph("Tunjangan Pajak", header_style))
-        header_row1.append(Paragraph("Gaji Kotor", header_style))
+        # Grup Subtotal Pendapatan (2 kolom) - DIUBAH DARI 3 MENJADI 2 KOLOM
+        header_row1.append(Paragraph("SUBTOTAL PENDAPATAN", 
+                                ParagraphStyle(name='GroupHeader', fontSize=5, 
+                                                alignment=TA_CENTER, 
+                                                backColor=group_colors['pendapatan'])))
+        header_row1.append('')  # Placeholder untuk colspan
         
-        # Potongan (merge 15 kolom)
-        header_row1.append(Paragraph("Potongan", potongan_header_style))
+        # Grup Potongan (15 kolom)
+        header_row1.append(Paragraph("POTONGAN", 
+                                ParagraphStyle(name='GroupHeader', fontSize=5, 
+                                                alignment=TA_CENTER, 
+                                                backColor=group_colors['potongan'])))
         header_row1.extend([''] * 14)  # Placeholder untuk colspan
         
-        # Total Potongan, Pajak, Net Wage
-        header_row1.append(Paragraph("Total Potongan", header_style))
-        header_row1.append(Paragraph("Pajak", header_style))
-        header_row1.append(Paragraph("Net Wage", header_style))
+        # Grup Pajak (1 kolom)
+        header_row1.append(Paragraph("PAJAK", 
+                                ParagraphStyle(name='GroupHeader', fontSize=5, 
+                                                alignment=TA_CENTER, 
+                                                backColor=group_colors['pajak'])))
+        
+        # Grup Total (2 kolom)
+        header_row1.append(Paragraph("TOTAL", 
+                                ParagraphStyle(name='GroupHeader', fontSize=5, 
+                                                alignment=TA_CENTER, 
+                                                backColor=group_colors['total'])))
+        header_row1.append('')  # Placeholder untuk colspan
         
         data.append(header_row1)
         
-        # Baris header kedua (sub-header)
+        # 2. SUB-HEADER (KOLOM DETAIL)
         header_row2 = []
         
-        # Kolom 1-11 kosong (karena sudah di-merge di atas)
-        header_row2.extend([''] * 11)
-        
-        # Basic Wage (tidak ada sub-header)
-        header_row2.append('')
-        
-        # Sub-header Tunjangan
-        tunjangan_sub_headers = [
-            '(T) JKM', '(T) JKK', '(T) JHT Comp', '(T) BPJS Kesehatan', '(T) JP Company',
-            '(T) Tidak Tetap', '(T) Lain Lain', '(T) Jabatan', '(T) Insentif', '(T) Makan'
+        # Informasi Karyawan
+        info_headers = [
+            "No", "Nama", "NO Karyawan", "Posisi", "Dept", 
+            "Gol", "Status", "Tgl Masuk", "Tgl Keluar", "Lama Kerja", "PTKP"
         ]
-        for h in tunjangan_sub_headers:
-            header_row2.append(Paragraph(h, tunjangan_header_style))
+        for h in info_headers:
+            header_row2.append(Paragraph(h, header_style))
         
-        # Total Pendapatan, Tunjangan Pajak, Gaji Kotor (tidak ada sub-header)
-        header_row2.extend([''] * 3)
+        # Gaji Pokok
+        header_row2.append(Paragraph("Basic", header_style))
         
-        # Sub-header Potongan
-        potongan_sub_headers = [
-            '(P) BPJS JKK', '(P) BPJS JKM', '(P) JHT Employee', '(P) JHT Comp', '(P) BPJS Kesehatan Company', 
-            '(P) BPJS Kes Emp', '(P) JP Company', '(P) JP Employee', '(P) Meal', '(P) Terlambat', 
-            '(P) Pulang Dini', '(P) Meninggalkan Pekerjaan', '(P) Pinjaman', '(P) Potongan Tidan Tetap', '(P) Potongan Gaji'
+        # Tunjangan
+        tunjangan_headers = [
+            "JKM", "JKK", "JHT Comp", "BPJS Kesehatan", "JP Comp",
+            "T. Tidak Tetap", "Lain-lain", "Jabatan", "Insentif", "Makan"
         ]
-        for h in potongan_sub_headers:
-            header_row2.append(Paragraph(h, potongan_header_style))
+        for h in tunjangan_headers:
+            header_row2.append(Paragraph(h, header_style))
         
-        # Total Potongan, Pajak, Net Wage (tidak ada sub-header)
-        header_row2.extend([''] * 3)
+        # Subtotal Pendapatan (2 kolom) - DIUBAH DARI 3 MENJADI 2 KOLOM
+        pendapatan_headers = [
+            "Sub Gross", "Tunj. Pajak"  # "Gross" dihapus
+        ]
+        for h in pendapatan_headers:
+            header_row2.append(Paragraph(h, header_style))
+        
+        # Potongan
+        potongan_headers = [
+            "BPJS JKK", "BPJS JKM", "JHT Emp", "JHT Comp", "BPJS K Comp",
+            "BPJS Kes Emp", "JP Comp", "JP Emp", "Meal", "Terlambat",
+            "Pulang Dini", "Meninggalkan Pekerjaan", "Pinjaman", "(P) Tunj. Tidak Tetap", "(P) Gaji"
+        ]
+        for h in potongan_headers:
+            header_row2.append(Paragraph(h, header_style))
+        
+        # Pajak
+        header_row2.append(Paragraph("PPH21", header_style))
+        
+        # Total
+        total_headers = [
+            "Total Potongan", "Gaji Bersih"
+        ]
+        for h in total_headers:
+            header_row2.append(Paragraph(h, header_style))
         
         data.append(header_row2)
         
-        # Isi data payslip
+        # 3. DATA PAYSLIP
         nomor = 1
         for payslip in self:
-            barcode = payslip.employee_id.barcode or "Tidak Ada"
-            department_name = payslip.employee_id.department_id.name.split(" / ")[-1] if payslip.employee_id.department_id.name else "Tidak Ada"
-            job_name = payslip.employee_id.job_id.name or "Tidak Ada"
-            tipe_karyawan = (payslip.employee_type or "Tidak Ada").title()
-            contract_type = payslip.contract_id.contract_type_id.name if payslip.contract_id else "Tidak Ada"
-            tanggal_bergabung = payslip.contract_id.date_start.strftime('%d-%m-%Y') if payslip.contract_id.date_start else ""
-            tanggal_berhenti = ""
-            status_pajak = dict(payslip.employee_id._fields['l10n_id_kode_ptkp'].selection).get(payslip.employee_id.l10n_id_kode_ptkp, "Tidak Ada")
+            # Data karyawan
+            barcode = payslip.employee_id.barcode or "-"
+            department_name = payslip.employee_id.department_id.name.split(" / ")[-1] if payslip.employee_id.department_id.name else "-"
+            job_name = payslip.employee_id.job_id.name or "-"
+            tipe_karyawan = (payslip.employee_type or "-").title()
+            contract_type = payslip.contract_id.contract_type_id.name if payslip.contract_id else "-"
+            tanggal_bergabung = payslip.contract_id.date_start.strftime('%d-%m-%Y') if payslip.contract_id.date_start else "-"
+            tanggal_berhenti = "-"
+            status_pajak = dict(payslip.employee_id._fields['l10n_id_kode_ptkp'].selection).get(payslip.employee_id.l10n_id_kode_ptkp, "-")
             
-            # Hitung lama kerja
+            # Lama kerja
             if payslip.contract_id.date_start:
                 start_date = payslip.contract_id.date_start
                 today_date = date.today()
                 delta = relativedelta.relativedelta(today_date, start_date)
-                lama_kerja = f"{delta.years} tahun {delta.months} bulan" if delta.years else f"{delta.months} bulan"
+                lama_kerja = f"{delta.years}th {delta.months}bln" if delta.years else f"{delta.months}bln"
             else:
-                lama_kerja = "Tidak Ada"
+                lama_kerja = "-"
             
-            # Buat baris data
+            # Baris data
             row_data = [
-                str(nomor),
+                Paragraph(str(nomor), wrap_style),
                 Paragraph(payslip.employee_id.name, wrap_style),
-                barcode,
-                job_name,
-                department_name,
-                tipe_karyawan,
-                contract_type,
-                tanggal_bergabung,
-                tanggal_berhenti,
-                lama_kerja,
-                status_pajak
+                Paragraph(barcode, wrap_style),
+                Paragraph(job_name, wrap_style),
+                Paragraph(department_name, wrap_style),
+                Paragraph(tipe_karyawan, wrap_style),
+                Paragraph(contract_type, wrap_style),
+                Paragraph(tanggal_bergabung, wrap_style),
+                Paragraph(tanggal_berhenti, wrap_style),
+                Paragraph(lama_kerja, wrap_style),
+                Paragraph(status_pajak, wrap_style)
             ]
             
-            # Tambahkan field optional
-            for field_name in optional_show_fields:
+            # Data numerik dengan format yang konsisten
+            numeric_fields = [
+                'basic_wage',  # Gaji pokok
+                
+                # Tunjangan
+                't_jkm', 't_jkk', 't_jht_comp', 't_bpjs_kesehatan', 't_jp_company',
+                't_tidak_tetap', 't_lain_lain', 't_jabatan', 't_insentif', 't_makan',
+                
+                # Subtotal pendapatan - DIUBAH DARI 3 MENJADI 2 FIELD
+                'sub_gross', 't_pph21',  # 'gross_wage' dihapus
+                
+                # Potongan
+                'p_bpjs_jkk', 'p_bpjs_jkm', 'p_jht_employee', 'p_jht_comp', 'p_bpjs_kes_comp',
+                'p_bpjs_kes_emp', 'p_jp_company', 'p_jp_employee', 'p_meal', 'p_terlambat',
+                'p_pd', 'p_mp', 'p_pinjaman', 'p_tunj_tidak_tetap', 'p_gaji',
+                
+                # Pajak
+                'p_pph21',
+                
+                # Total
+                'p_potongan', 'net_wage'
+            ]
+            
+            for field_name in numeric_fields:
                 field_value = getattr(payslip, field_name, 0.0)
-                row_data.append(f"{field_value:,.2f}" if isinstance(field_value, (int, float)) else str(field_value))
+                formatted_value = f"{field_value:,.0f}" if field_value == int(field_value) else f"{field_value:,.2f}"
+                row_data.append(Paragraph(formatted_value, wrap_style))
             
             data.append(row_data)
             nomor += 1
         
-        # Tambahkan baris total
-        total_row = [Paragraph("Total", header_style)]
-        total_row.extend([''] * 10)  # Untuk kolom 1-11
+        # 4. BARIS TOTAL
+        total_row = [Paragraph("TOTAL", 
+                            ParagraphStyle(name='TotalHeader', fontSize=4.5, 
+                                        alignment=TA_CENTER, 
+                                        backColor=group_colors['total']))]
+        total_row.extend([''] * (len(info_headers)-1))
         
-        # Hitung total untuk setiap field optional
-        col_start = 11  # Kolom pertama setelah header utama
-        for i in range(len(optional_show_fields)):
-            total = sum(getattr(payslip, optional_show_fields[i], 0.0) for payslip in self)
-            total_row.append(f"{total:,.2f}")
+        # Hitung total untuk setiap field numerik
+        for field_name in numeric_fields:
+            total = sum(getattr(payslip, field_name, 0.0) for payslip in self)
+            total_row.append(Paragraph(f"{total:,.0f}" if total == int(total) else f"{total:,.2f}", 
+                                    ParagraphStyle(name='TotalText', fontSize=4.5, 
+                                                alignment=TA_RIGHT, 
+                                                textColor=colors.black,
+                                                fontName='Helvetica-Bold')))
         
         data.append(total_row)
         
+        # ===================== TABLE FORMATTING =====================
+        
+        # Lebar kolom yang lebih proporsional
+        col_widths = [
+            0.4*cm,  # No
+            0.95*cm,  # Nama
+            1.5*cm,  # ID
+            0.95*cm,  # Posisi
+            0.95*cm,  # Dept
+            0.95*cm,  # Gol
+            0.95*cm,  # Status
+            0.95*cm,  # Tgl Masuk
+            0.95*cm,  # Tgl Keluar
+            0.95*cm,  # Lama
+            0.95*cm,  # Pajak
+            
+            # Gaji Pokok
+            1.1*cm,
+            
+            # Tunjangan (10 kolom)
+            *[0.95*cm for _ in range(10)],
+            
+            # Subtotal Pendapatan (2 kolom) - DIUBAH DARI 3 MENJADI 2 KOLOM
+            *[1.1*cm for _ in range(2)],
+            
+            # Potongan (15 kolom)
+            *[0.95*cm for _ in range(15)],
+            
+            # Pajak
+            0.95*cm,
+            
+            # Total (2 kolom)
+            *[1.1*cm for _ in range(2)],
+        ]
+        
         # Buat tabel
-        table = Table(data, repeatRows=2)
+        table = Table(data, colWidths=col_widths, repeatRows=2, hAlign='LEFT')
         
         # Style untuk tabel
         table_style = TableStyle([
-            # Header style
-            ('SPAN', (11, 0), (20, 0)),  # Merge untuk Tunjangan
-            ('SPAN', (21, 0), (23, 0)),  # Merge untuk Total Pendapatan, Tunjangan Pajak, Gaji Kotor
-            ('SPAN', (24, 0), (38, 0)),  # Merge untuk Potongan
-            ('SPAN', (39, 0), (41, 0)),  # Merge untuk Total Potongan, Pajak, Net Wage
+            # Span untuk group headers
+            ('SPAN', (0, -1), (10, -1)),
+            ('SPAN', (0, 0), (10, 0)),  # Informasi Karyawan
+            ('SPAN', (11, 0), (11, 0)),  # Gaji Pokok
+            ('SPAN', (12, 0), (21, 0)),  # Tunjangan
+            ('SPAN', (22, 0), (23, 0)),  # Subtotal Pendapatan (DIUBAH DARI (22,0)-(24,0))
+            ('SPAN', (24, 0), (38, 0)),  # Potongan (DIUBAH KARENA GROSS DIHAPUS)
+            ('SPAN', (39, 0), (39, 0)),  # Pajak (DIUBAH KARENA GROSS DIHAPUS)
+            ('SPAN', (40, 0), (41, 0)),  # Total (DIUBAH KARENA GROSS DIHAPUS)
             
-            # Background header
-            ('BACKGROUND', (0, 0), (-1, 1), colors.white),
-            ('BACKGROUND', (11, 0), (20, 0), colors.HexColor('#D3D3D3')),  # Tunjangan
-            ('BACKGROUND', (24, 0), (38, 0), colors.HexColor('#FFCCCB')),  # Potongan
+            # Background group headers
+            ('BACKGROUND', (0, 0), (10, 0), group_colors['info']),
+            ('BACKGROUND', (11, 0), (11, 0), group_colors['pendapatan']),
+            ('BACKGROUND', (12, 0), (21, 0), group_colors['tunjangan']),
+            ('BACKGROUND', (22, 0), (23, 0), group_colors['pendapatan']),  # DIUBAH DARI (22,0)-(24,0)
+            ('BACKGROUND', (24, 0), (38, 0), group_colors['potongan']),  # DIUBAH KARENA GROSS DIHAPUS
+            ('BACKGROUND', (39, 0), (39, 0), group_colors['pajak']),  # DIUBAH KARENA GROSS DIHAPUS
+            ('BACKGROUND', (40, 0), (41, 0), group_colors['total']),  # DIUBAH KARENA GROSS DIHAPUS
             
-            # Sub-header background
-            ('BACKGROUND', (11, 1), (20, 1), colors.HexColor('#D3D3D3')),  # Tunjangan
-            ('BACKGROUND', (24, 1), (38, 1), colors.HexColor('#FFCCCB')),  # Potongan
+            # Background sub-headers
+            ('BACKGROUND', (0, 1), (10, 1), colors.lightgrey),
+            ('BACKGROUND', (11, 1), (11, 1), colors.lightgrey),
+            ('BACKGROUND', (12, 1), (21, 1), group_colors['tunjangan']),
+            ('BACKGROUND', (22, 1), (23, 1), group_colors['pendapatan']),  # DIUBAH DARI (22,1)-(24,1)
+            ('BACKGROUND', (24, 1), (38, 1), group_colors['potongan']),  # DIUBAH KARENA GROSS DIHAPUS
+            ('BACKGROUND', (39, 1), (39, 1), group_colors['pajak']),  # DIUBAH KARENA GROSS DIHAPUS
+            ('BACKGROUND', (40, 1), (41, 1), group_colors['total']),  # DIUBAH KARENA GROSS DIHAPUS
             
             # Border
             ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
             
             # Alignment
             ('ALIGN', (11, 2), (-1, -1), 'RIGHT'),  # Angka rata kanan
@@ -513,11 +617,49 @@ class HrPayslip(models.Model):
             # Font
             ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 6),
+            ('LEADING', (0, 0), (-1, -1), 7),
+            
+            # Padding
+            ('LEFTPADDING', (0, 0), (-1, -1), 2),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+            ('TOPPADDING', (0, 0), (-1, -1), 1),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+            
+            # Total row style
+            ('BACKGROUND', (0, -1), (41, -1), group_colors['total']),  # DIUBAH DARI (0,-1)-(42,-1)
+            ('FONTNAME', (0, -1), (41, -1), 'Helvetica-Bold'),  # DIUBAH DARI (0,-1)-(42,-1)
+            ('TEXTCOLOR', (0, -1), (41, -1), colors.black),  # DIUBAH DARI (0,-1)-(42,-1)
         ])
         
         table.setStyle(table_style)
         elements.append(table)
         
+        # ===================== SIGNATURE BELOW TABLE =====================
+        # Buat frame untuk signature yang akan dipindahkan ke halaman berikutnya jika tidak cukup space
+        signature_frame = KeepTogether([
+            Spacer(1, 1*cm),  # space before signature
+            
+            Paragraph("Direktur", ParagraphStyle(
+                name='SignatureTitle', 
+                fontSize=7,
+                alignment=TA_CENTER,
+                fontName='Helvetica-Bold'
+            )),
+            Spacer(1, 1.5*cm),  # space for signature line
+            
+            Paragraph("Alex Graham Bell", ParagraphStyle(
+                name='SignatureName', 
+                fontSize=7,
+                alignment=TA_CENTER,
+                fontName='Helvetica'
+            )),
+            
+            # Tambahkan spacer ekstra untuk memastikan ada cukup ruang
+            Spacer(1, 2*cm)
+        ])
+
+        elements.append(signature_frame)
+
         # Build PDF
         doc.build(elements)
         pdf_value = buffer.getvalue()
@@ -525,7 +667,7 @@ class HrPayslip(models.Model):
 
         # Buat attachment
         attachment = self.env['ir.attachment'].create({
-            'name': f'Payslip_Laporan_{formatted_date}.pdf',
+            'name': f'Payslip_Laporan_{batch_name}_{formatted_date.split()[0]}.pdf',
             'type': 'binary',
             'datas': base64.b64encode(pdf_value),
             'res_model': 'hr.payslip',
@@ -533,9 +675,9 @@ class HrPayslip(models.Model):
             'mimetype': 'application/pdf'
         })
 
-        # Return URL untuk membuka PDF di tab baru
         return {
             'type': 'ir.actions.act_url',
-            'url': f'/web/content/{attachment.id}?download=false',  # download=false untuk mencegah download otomatis
-            'target': 'new',  # Buka di tab baru
+            'url': f'/web/content/{attachment.id}?download=false',
+            'target': 'new',
         }
+
