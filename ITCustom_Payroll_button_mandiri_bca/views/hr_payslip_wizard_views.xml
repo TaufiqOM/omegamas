@@ -46,15 +46,22 @@
         <field name="view_id" ref="view_hr_payslip_wizard_bca_form"/>
         <field name="target">new</field>
     </record>
-    <!-- Wizard untuk Export Laporan -->
     <record id="view_hr_payslip_wizard_laporan_form" model="ir.ui.view">
         <field name="name">hr.payslip.wizard.laporan.form</field>
         <field name="model">hr.payslip.wizard.laporan</field>
         <field name="arch" type="xml">
-            <form string="Pilih Tanggal Pembayaran laporan">
+            <form string="Pilih Tanggal Pembayaran Laporan">
                 <group>
                     <field name="export_date"/>
                     <field name="export_type" widget="radio"/>
+                </group>
+                <group col="2">
+                    <group string="Tunjangan">
+                        <field name="tunjangan_fields" widget="many2many_checkboxes" options="{'no_create': True}"/>
+                    </group>
+                    <group string="Potongan">
+                        <field name="potongan_fields" widget="many2many_checkboxes" options="{'no_create': True}"/>
+                    </group>
                 </group>
                 <footer>
                     <button string="Export" name="action_confirm" type="object" class="btn-primary"/>
