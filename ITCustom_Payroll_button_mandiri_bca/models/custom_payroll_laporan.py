@@ -262,88 +262,6 @@ class HrPayslip(models.Model):
             'target': 'self',
         }
 
-    def export_to_laporan_pdf(self, export_date=None):
-        """
-        Method untuk mengekspor data payslip ke dalam file PDF dengan:
-        - Penataan kolom yang lebih terstruktur seperti Excel
-        - Grup kolom yang logis (Pendapatan, Potongan, dll)
-        - Warna header yang membedakan grup
-        """
-        if not export_date:
-            export_date = fields.Date.context_today(self)
-
-        buffer = io.BytesIO()
-
-        # Buat dokumen PDF ukuran landscape A3 dengan margin kecil
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=landscape(A3),
-            rightMargin=0.5*cm,
-            leftMargin=0.5*cm,
-            topMargin=0.5*cm,
-            bottomMargin=0.5*cm
-        )
-
-        elements = []
-        styles = getSampleStyleSheet()
-        
-        # Custom styles dengan font kecil tapi readable
-        wrap_style = ParagraphStyle(
-            name='Wrapped',
-            parent=styles['Normal'],
-            alignment=TA_LEFT,
-            fontSize=5,
-            leading=5,
-            spaceAfter=1
-        )
-        
-        header_style = ParagraphStyle(
-            name='Header',
-            parent=styles['Normal'],
-            alignment=TA_CENTER,
-            fontSize=5,
-            textColor=colors.black,
-            spaceAfter=1,
-            fontName='Helvetica-Bold',
-            leading=5
-        )
-        
-        # Warna untuk grup kolom berbeda
-        group_colors = {
-            'info': colors.HexColor('#D9E1F2'),  # Biru muda untuk info karyawan
-            'pendapatan': colors.HexColor('#E2EFDA'),  # Hijau muda untuk pendapatan
-            'tunjangan': colors.HexColor('#FFF2CC'),  # Kuning muda untuk tunjangan
-            'potongan': colors.HexColor('#FCE4D6'),  # Oranye muda untuk potongan
-            'pajak': colors.HexColor('#F4B084'),  # Oranye lebih tua untuk pajak
-            'total': colors.HexColor('#BDD7EE'),  # Biru untuk total
-        }
-
-        # Format tanggal
-        bulan_dict = {
-            '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
-            '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
-            '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
-        }
-
-        if export_date:
-            bulan = export_date.strftime('%m')
-            bulan_text = bulan_dict.get(bulan, 'Tidak Valid')
-            jakarta_tz = ZoneInfo('Asia/Jakarta')
-            current_time = datetime.now(jakarta_tz).strftime('%H:%M')
-            formatted_date = export_date.strftime(f'%d {bulan_text} %Y') + f' {current_time} WIB'
-        else:
-            jakarta_tz = ZoneInfo('Asia/Jakarta')
-            current_time = datetime.now(jakarta_tz).strftime('%H:%M')
-            formatted_date = datetime.today().strftime('%d %B %Y') + f' {current_time} WIB'
-
-        # Header laporan
-        batch_name = self[0].payslip_run_id.name if self[0].payslip_run_id else "Gaji Karyawan"
-        
-        elements.append(Paragraph(f"<b>LAPORAN PERHITUNGAN GAJI - {batch_name}</b>", 
-                                ParagraphStyle(name='Title', fontSize=7, alignment=TA_CENTER)))
-        elements.append(Paragraph(f"<b>Tanggal Cetak:</b> {formatted_date}", 
-                                ParagraphStyle(name='Subtitle', fontSize=5, alignment=TA_CENTER)))
-        elements.append(Spacer(1, 0.5*cm))
 
     def export_to_laporan_pdf(self, export_date=None):
         """
@@ -351,6 +269,9 @@ class HrPayslip(models.Model):
         - Penataan kolom yang lebih terstruktur seperti Excel
         - Grup kolom yang logis (Pendapatan, Potongan, dll)
         - Warna header yang membedakan grup
+        - Jika muat, semua data dan tanda tangan dalam 1 halaman
+        - Jika tidak muat, halaman terakhir maksimal 35 baris data
+        - Kolom Tgl Keluar dihapus
         """
         if not export_date:
             export_date = fields.Date.context_today(self)
@@ -439,7 +360,7 @@ class HrPayslip(models.Model):
                                     ParagraphStyle(name='GroupHeader', fontSize=5, 
                                                 alignment=TA_CENTER, 
                                                 backColor=group_colors['info'])))
-        header_row1.extend([''] * 10)
+        header_row1.extend([''] * 9)  # 10 kolom info karyawan (tanpa Tgl Keluar)
         header_row1.append(Paragraph("GAJI POKOK", 
                                     ParagraphStyle(name='GroupHeader', fontSize=5, 
                                                 alignment=TA_CENTER, 
@@ -474,7 +395,7 @@ class HrPayslip(models.Model):
         header_row2 = []
         info_headers = [
             "No", "Nama", "NO Karyawan", "Posisi", "Dept", 
-            "Gol", "Status", "Tgl Masuk", "Tgl Keluar", "Lama Kerja", "PTKP"
+            "Gol", "Status", "Tgl Masuk", "Lama Kerja", "PTKP"
         ]
         for h in info_headers:
             header_row2.append(Paragraph(h, header_style))
@@ -504,14 +425,16 @@ class HrPayslip(models.Model):
         # 3. DATA PAYSLIP
         nomor = 1
         payslip_data = []
+        is_non_staff = False
         for payslip in self:
             barcode = payslip.employee_id.barcode or "-"
             department_name = payslip.employee_id.department_id.name.split(" / ")[-1] if payslip.employee_id.department_id.name else "-"
             job_name = payslip.employee_id.job_id.name or "-"
             tipe_karyawan = (payslip.employee_type or "-").title()
+            if tipe_karyawan.lower() != 'staff':
+                is_non_staff = True
             contract_type = payslip.contract_id.contract_type_id.name if payslip.contract_id else "-"
             tanggal_bergabung = payslip.contract_id.date_start.strftime('%d-%m-%Y') if payslip.contract_id.date_start else "-"
-            tanggal_berhenti = "-"
             status_pajak = dict(payslip.employee_id._fields['l10n_id_kode_ptkp'].selection).get(payslip.employee_id.l10n_id_kode_ptkp, "-")
             
             if payslip.contract_id.date_start:
@@ -531,7 +454,6 @@ class HrPayslip(models.Model):
                 Paragraph(tipe_karyawan, wrap_style),
                 Paragraph(contract_type, wrap_style),
                 Paragraph(tanggal_bergabung, wrap_style),
-                Paragraph(tanggal_berhenti, wrap_style),
                 Paragraph(lama_kerja, wrap_style),
                 Paragraph(status_pajak, wrap_style)
             ]
@@ -570,16 +492,15 @@ class HrPayslip(models.Model):
         # 5. DEFINISI col_widths
         col_widths = [
             0.4*cm,  # No
-            0.95*cm,  # Nama
-            1.5*cm,  # ID
-            0.95*cm,  # Posisi
-            0.95*cm,  # Dept
-            0.95*cm,  # Gol
-            0.95*cm,  # Status
-            0.95*cm,  # Tgl Masuk
-            0.95*cm,  # Tgl Keluar
-            0.95*cm,  # Lama
-            0.95*cm,  # Pajak
+            1.0*cm,  # Nama
+            1.2*cm,  # NO Karyawan
+            1.5*cm,  # Posisi
+            1.0*cm,  # Dept
+            0.8*cm,  # Gol
+            1.0*cm,  # Status
+            1.2*cm,  # Tgl Masuk
+            0.9*cm,  # Lama Kerja
+            0.8*cm,  # PTKP
             1.1*cm,  # Gaji Pokok
             *[0.95*cm for _ in range(10)],  # Tunjangan
             *[1.1*cm for _ in range(2)],  # Subtotal Pendapatan
@@ -588,32 +509,32 @@ class HrPayslip(models.Model):
             *[1.1*cm for _ in range(2)],  # Total
         ]
 
-        # 6. DEFINISI table_style (tanpa SPAN untuk baris terakhir)
+        # 6. DEFINISI table_style
         base_table_style = [
-            ('SPAN', (0, 0), (10, 0)),  # Informasi Karyawan
-            ('SPAN', (11, 0), (11, 0)),  # Gaji Pokok
-            ('SPAN', (12, 0), (21, 0)),  # Tunjangan
-            ('SPAN', (22, 0), (23, 0)),  # Subtotal Pendapatan
-            ('SPAN', (24, 0), (38, 0)),  # Potongan
-            ('SPAN', (39, 0), (39, 0)),  # Pajak
-            ('SPAN', (40, 0), (41, 0)),  # Total
-            ('BACKGROUND', (0, 0), (10, 0), group_colors['info']),
-            ('BACKGROUND', (11, 0), (11, 0), group_colors['pendapatan']),
-            ('BACKGROUND', (12, 0), (21, 0), group_colors['tunjangan']),
-            ('BACKGROUND', (22, 0), (23, 0), group_colors['pendapatan']),
-            ('BACKGROUND', (24, 0), (38, 0), group_colors['potongan']),
-            ('BACKGROUND', (39, 0), (39, 0), group_colors['pajak']),
-            ('BACKGROUND', (40, 0), (41, 0), group_colors['total']),
-            ('BACKGROUND', (0, 1), (10, 1), colors.lightgrey),
-            ('BACKGROUND', (11, 1), (11, 1), colors.lightgrey),
-            ('BACKGROUND', (12, 1), (21, 1), group_colors['tunjangan']),
-            ('BACKGROUND', (22, 1), (23, 1), group_colors['pendapatan']),
-            ('BACKGROUND', (24, 1), (38, 1), group_colors['potongan']),
-            ('BACKGROUND', (39, 1), (39, 1), group_colors['pajak']),
-            ('BACKGROUND', (40, 1), (41, 1), group_colors['total']),
+            ('SPAN', (0, 0), (9, 0)),  # Informasi Karyawan (10 kolom)
+            ('SPAN', (10, 0), (10, 0)),  # Gaji Pokok
+            ('SPAN', (11, 0), (20, 0)),  # Tunjangan
+            ('SPAN', (21, 0), (22, 0)),  # Subtotal Pendapatan
+            ('SPAN', (23, 0), (37, 0)),  # Potongan
+            ('SPAN', (38, 0), (38, 0)),  # Pajak
+            ('SPAN', (39, 0), (40, 0)),  # Total
+            ('BACKGROUND', (0, 0), (9, 0), group_colors['info']),
+            ('BACKGROUND', (10, 0), (10, 0), group_colors['pendapatan']),
+            ('BACKGROUND', (11, 0), (20, 0), group_colors['tunjangan']),
+            ('BACKGROUND', (21, 0), (22, 0), group_colors['pendapatan']),
+            ('BACKGROUND', (23, 0), (37, 0), group_colors['potongan']),
+            ('BACKGROUND', (38, 0), (38, 0), group_colors['pajak']),
+            ('BACKGROUND', (39, 0), (40, 0), group_colors['total']),
+            ('BACKGROUND', (0, 1), (9, 1), colors.lightgrey),
+            ('BACKGROUND', (10, 1), (10, 1), colors.lightgrey),
+            ('BACKGROUND', (11, 1), (20, 1), group_colors['tunjangan']),
+            ('BACKGROUND', (21, 1), (22, 1), group_colors['pendapatan']),
+            ('BACKGROUND', (23, 1), (37, 1), group_colors['potongan']),
+            ('BACKGROUND', (38, 1), (38, 1), group_colors['pajak']),
+            ('BACKGROUND', (39, 1), (40, 1), group_colors['total']),
             ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
             ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
-            ('ALIGN', (11, 2), (-1, -1), 'RIGHT'),
+            ('ALIGN', (10, 2), (-1, -1), 'RIGHT'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 6),
@@ -624,83 +545,204 @@ class HrPayslip(models.Model):
             ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
         ]
 
-        # 7. PEMBAGIAN DATA BERDASARKAN JUMLAH DATA
+        # 7. ESTIMASI TINGGI KONTEN UNTUK MENENTUKAN SATU HALAMAN
+        page_height = 1162  # 410 mm * 2.8346 poin/mm
+        title_height = 28  # 2 baris (font 7, leading 7) + Spacer 0.5 cm
+        row_height = 9  # Font 5, leading 7, padding 1+1
+        signature_height = 120 if is_non_staff else 110  # Adjust for three or two signatures
+        table_height = (len(payslip_data) + 3) * row_height
+        total_height = title_height + table_height + signature_height
+
         tables = []
-        
-        if len(payslip_data) >= 45:
-            # Jika data >= 45, tampilkan semua dalam satu tabel tanpa PageBreak
+
+        if total_height <= page_height:
+            # Jika muat dalam satu halaman, buat satu tabel
             single_table_data = [header_row1, header_row2]
             single_table_data.extend(payslip_data)
             single_table_data.append(total_row)
             single_table_style = base_table_style + [
-                ('SPAN', (0, len(single_table_data)-1), (10, len(single_table_data)-1)),  # SPAN pada baris total
-                ('BACKGROUND', (0, len(single_table_data)-1), (41, len(single_table_data)-1), group_colors['total']),
-                ('FONTNAME', (0, len(single_table_data)-1), (41, len(single_table_data)-1), 'Helvetica-Bold'),
-                ('TEXTCOLOR', (0, len(single_table_data)-1), (41, len(single_table_data)-1), colors.black),
+                ('SPAN', (0, len(single_table_data)-1), (9, len(single_table_data)-1)),
+                ('BACKGROUND', (0, len(single_table_data)-1), (40, len(single_table_data)-1), group_colors['total']),
+                ('FONTNAME', (0, len(single_table_data)-1), (40, len(single_table_data)-1), 'Helvetica-Bold'),
+                ('TEXTCOLOR', (0, len(single_table_data)-1), (40, len(single_table_data)-1), colors.black),
             ]
             table = Table(single_table_data, colWidths=col_widths, repeatRows=2, hAlign='LEFT')
             table.setStyle(TableStyle(single_table_style))
             tables.append(table)
         else:
-            # Jika data < 45, pisah menjadi dua tabel dengan PageBreak
-            split_index = 34  # Data nomor 1-34 di halaman pertama, 35 ke atas di halaman kedua
+            # Jika tidak muat, halaman terakhir maksimal 35 baris data
+            max_last_page_data = 35
+            remaining_data = len(payslip_data)
+            data_index = 0
 
-            # Tabel pertama (nomor 1-34)
-            first_table_data = [header_row1, header_row2]
-            first_table_data.extend(payslip_data[:min(split_index, len(payslip_data))])
-            first_table_style = base_table_style
-            if len(payslip_data) <= split_index:
-                first_table_data.append(total_row)
-                first_table_style = base_table_style + [
-                    ('SPAN', (0, len(first_table_data)-1), (10, len(first_table_data)-1)),  # SPAN pada baris total
-                    ('BACKGROUND', (0, len(first_table_data)-1), (41, len(first_table_data)-1), group_colors['total']),
-                    ('FONTNAME', (0, len(first_table_data)-1), (41, len(first_table_data)-1), 'Helvetica-Bold'),
-                    ('TEXTCOLOR', (0, len(first_table_data)-1), (41, len(first_table_data)-1), colors.black),
-                ]
-            table = Table(first_table_data, colWidths=col_widths, repeatRows=2, hAlign='LEFT')
-            table.setStyle(TableStyle(first_table_style))
-            tables.append(table)
+            # Hitung tinggi halaman terakhir
+            last_page_table_height = (2 + min(remaining_data, max_last_page_data) + 1) * row_height
+            last_page_height = last_page_table_height + signature_height
+            first_page_height = title_height + (2 + 1) * row_height
+            middle_page_height = (2 + 1) * row_height
 
-            # Tabel kedua (nomor 35 ke atas, jika ada)
-            if len(payslip_data) > split_index:
-                second_table_data = [header_row1, header_row2]
-                second_table_data.extend(payslip_data[split_index:])
-                second_table_data.append(total_row)
-                second_table_style = base_table_style + [
-                    ('SPAN', (0, len(second_table_data)-1), (10, len(second_table_data)-1)),  # SPAN pada baris total
-                    ('BACKGROUND', (0, len(second_table_data)-1), (41, len(second_table_data)-1), group_colors['total']),
-                    ('FONTNAME', (0, len(second_table_data)-1), (41, len(second_table_data)-1), 'Helvetica-Bold'),
-                    ('TEXTCOLOR', (0, len(second_table_data)-1), (41, len(second_table_data)-1), colors.black),
-                ]
-                table = Table(second_table_data, colWidths=col_widths, repeatRows=2, hAlign='LEFT')
-                table.setStyle(TableStyle(second_table_style))
-                tables.append(table)
+            while remaining_data > 0:
+                if remaining_data <= max_last_page_data:
+                    table_data = [header_row1, header_row2]
+                    table_data.extend(payslip_data[data_index:data_index + remaining_data])
+                    table_data.append(total_row)
+                    table_style = base_table_style + [
+                        ('SPAN', (0, len(table_data)-1), (9, len(table_data)-1)),
+                        ('BACKGROUND', (0, len(table_data)-1), (40, len(table_data)-1), group_colors['total']),
+                        ('FONTNAME', (0, len(table_data)-1), (40, len(table_data)-1), 'Helvetica-Bold'),
+                        ('TEXTCOLOR', (0, len(table_data)-1), (40, len(table_data)-1), colors.black),
+                    ]
+                    table = Table(table_data, colWidths=col_widths, repeatRows=2, hAlign='LEFT')
+                    table.setStyle(TableStyle(table_style))
+                    tables.append(table)
+                    data_index += remaining_data
+                    remaining_data = 0
+                else:
+                    if data_index == 0:
+                        available_height = page_height - title_height
+                    else:
+                        available_height = page_height
+                    max_rows = max(1, int((available_height - 2 * row_height) // row_height))
+                    rows_to_take = min(remaining_data - max_last_page_data, max_rows)
+                    
+                    table_data = [header_row1, header_row2]
+                    table_data.extend(payslip_data[data_index:data_index + rows_to_take])
+                    table = Table(table_data, colWidths=col_widths, repeatRows=2, hAlign='LEFT')
+                    table.setStyle(TableStyle(base_table_style))
+                    tables.append(table)
+                    data_index += rows_to_take
+                    remaining_data -= rows_to_take
+                    if remaining_data > 0:
+                        tables.append(PageBreak())
 
-        # Gabungkan elemen dengan urutan yang benar
         elements.extend(tables)
 
-        # Tambahkan PageBreak sebelum tabel kedua, jika ada dan data < 45
-        if len(payslip_data) > 34 and len(payslip_data) < 45:
-            elements.insert(-1, PageBreak())  # Sisipkan PageBreak sebelum tabel kedua
-
         # ===================== SIGNATURE BELOW TABLE =====================
-        signature_frame = KeepTogether([
-            Spacer(1, 1*cm),
-            Paragraph("Direktur", ParagraphStyle(
-                name='SignatureTitle', 
-                fontSize=7,
-                alignment=TA_CENTER,
-                fontName='Helvetica-Bold'
-            )),
-            Spacer(1, 1.5*cm),
-            Paragraph("Alex Graham Bell", ParagraphStyle(
-                name='SignatureName', 
-                fontSize=7,
-                alignment=TA_CENTER,
-                fontName='Helvetica'
-            )),
-            Spacer(1, 2*cm)
-        ])
+        if is_non_staff:
+            signature_data = [
+                [
+                    Paragraph("Dibuat oleh", ParagraphStyle(
+                        name='SignatureTitle', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica-Bold'
+                    )),
+                    Paragraph("Diperiksa oleh", ParagraphStyle(
+                        name='SignatureTitle', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica-Bold'
+                    )),
+                    Paragraph("Disetujui oleh", ParagraphStyle(
+                        name='SignatureTitle', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica-Bold'
+                    ))
+                ],
+                [
+                    Paragraph("", ParagraphStyle(
+                        name='SignatureSpace', 
+                        fontSize=7,
+                        alignment=TA_CENTER
+                    )),
+                    Paragraph("", ParagraphStyle(
+                        name='SignatureSpace', 
+                        fontSize=7,
+                        alignment=TA_CENTER
+                    )),
+                    Paragraph("", ParagraphStyle(
+                        name='SignatureSpace', 
+                        fontSize=7,
+                        alignment=TA_CENTER
+                    ))
+                ],
+                [
+                    Paragraph("Sunarsih", ParagraphStyle(
+                        name='SignatureName', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica'
+                    )),
+                    Paragraph("Kholilah", ParagraphStyle(
+                        name='SignatureName', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica'
+                    )),
+                    Paragraph("Dietmar Dutilleux", ParagraphStyle(
+                        name='SignatureName', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica'
+                    ))
+                ]
+            ]
+            signature_table = Table(signature_data, colWidths=[10*cm, 10*cm, 10*cm], hAlign='CENTER')
+            signature_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('TOPPADDING', (0, 1), (-1, 1), 20),  # Space for signature
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ]))
+            signature_frame = KeepTogether([
+                Spacer(1, 0.5*cm),
+                signature_table,
+                Spacer(1, 2*cm)
+            ])
+        else:
+            signature_data = [
+                [
+                    Paragraph("Dibuat oleh", ParagraphStyle(
+                        name='SignatureTitle', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica-Bold'
+                    )),
+                    Paragraph("Disetujui oleh", ParagraphStyle(
+                        name='SignatureTitle', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica-Bold'
+                    ))
+                ],
+                [
+                    Paragraph("", ParagraphStyle(
+                        name='SignatureSpace', 
+                        fontSize=7,
+                        alignment=TA_CENTER
+                    )),
+                    Paragraph("", ParagraphStyle(
+                        name='SignatureSpace', 
+                        fontSize=7,
+                        alignment=TA_CENTER
+                    ))
+                ],
+                [
+                    Paragraph("Kholilah", ParagraphStyle(
+                        name='SignatureName', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica'
+                    )),
+                    Paragraph("Dietmar Dutilleux", ParagraphStyle(
+                        name='SignatureName', 
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        fontName='Helvetica'
+                    ))
+                ]
+            ]
+            signature_table = Table(signature_data, colWidths=[15*cm, 15*cm], hAlign='CENTER')
+            signature_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('TOPPADDING', (0, 1), (-1, 1), 20),  # Space for signature
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ]))
+            signature_frame = KeepTogether([
+                Spacer(1, 0.5*cm),
+                signature_table,
+                Spacer(1, 2*cm)
+            ])
         elements.append(signature_frame)
 
         # Build PDF
