@@ -106,6 +106,6 @@ class BarcodeProduksiSubkode(models.Model):
 
         return {
             'type': 'ir.actions.act_url',
-            'url': f'/web/content/{attachment.id}?download=true',
+            'url': f'/web/content/{attachment.id}?download=false',
             'target': 'new',
         }

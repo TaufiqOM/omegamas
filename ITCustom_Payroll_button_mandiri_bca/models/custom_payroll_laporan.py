@@ -463,6 +463,7 @@ class HrPayslip(models.Model):
             'url': f'/web/content/{attachment.id}?download=true',
             'target': 'self',
         }
+        
 
     def export_to_laporan_pdf(self, export_date=None, selected_field_names=None):
         """
@@ -472,8 +473,10 @@ class HrPayslip(models.Model):
         - Warna header yang membedakan grup
         - Jika muat, semua data dan tanda tangan dalam 1 halaman
         - Jika tidak muat, halaman terakhir maksimal 35 baris data
-        - Kolom Tgl Keluar dihapus
+        - Kolom Tgl Keluar, Dept, dan Gol dihapus
         - Hanya ekspor field yang dipilih dari wizard, tanpa gross_wage
+        - Menampilkan periode (start_date - end_date) di bawah judul laporan
+        - Tanggal Cetak diletakkan di footer setiap halaman, rata kiri
         """
         if not self:
             return
@@ -495,7 +498,7 @@ class HrPayslip(models.Model):
             rightMargin=0.5*cm,
             leftMargin=0.5*cm,
             topMargin=0.5*cm,
-            bottomMargin=0.5*cm
+            bottomMargin=1.0*cm  # Tambah margin bawah untuk footer
         )
 
         elements = []
@@ -520,6 +523,15 @@ class HrPayslip(models.Model):
             spaceAfter=1,
             fontName='Helvetica-Bold',
             leading=5
+        )
+
+        footer_style = ParagraphStyle(
+            name='Footer',
+            parent=styles['Normal'],
+            alignment=TA_LEFT,  # Rata kiri untuk footer
+            fontSize=5,
+            textColor=colors.black,
+            fontName='Helvetica'
         )
 
         # Warna untuk grup kolom berbeda
@@ -550,14 +562,34 @@ class HrPayslip(models.Model):
             current_time = datetime.now(jakarta_tz).strftime('%H:%M')
             formatted_date = datetime.today().strftime('%d %B %Y') + f' {current_time} WIB'
 
+        # Format periode dari date_start dan date_end
+        if self[0].payslip_run_id and self[0].payslip_run_id.date_start and self[0].payslip_run_id.date_end:
+            start_date = self[0].payslip_run_id.date_start
+            end_date = self[0].payslip_run_id.date_end
+            start_bulan = start_date.strftime('%m')
+            end_bulan = end_date.strftime('%m')
+            start_bulan_text = bulan_dict.get(start_bulan, 'Tidak Valid')
+            end_bulan_text = bulan_dict.get(end_bulan, 'Tidak Valid')
+            formatted_period = f"{start_date.strftime('%d')} {start_bulan_text} {start_date.strftime('%Y')} - {end_date.strftime('%d')} {end_bulan_text} {end_date.strftime('%Y')}"
+        else:
+            formatted_period = "Periode Tidak Tersedia"
+
         # Header laporan
         batch_name = self[0].payslip_run_id.name if self[0].payslip_run_id else "Gaji Karyawan"
-
         elements.append(Paragraph(f"<b>LAPORAN PERHITUNGAN GAJI - {batch_name}</b>",
                                 ParagraphStyle(name='Title', fontSize=7, alignment=TA_CENTER)))
-        elements.append(Paragraph(f"<b>Tanggal Cetak:</b> {formatted_date}",
+        elements.append(Paragraph(f"<b>Periode:</b> {formatted_period}",
                                 ParagraphStyle(name='Subtitle', fontSize=5, alignment=TA_CENTER)))
         elements.append(Spacer(1, 0.5*cm))
+
+        # Fungsi untuk menambahkan footer di setiap halaman
+        def add_footer(canvas, doc):
+            canvas.saveState()
+            footer_text = f"<b>Pasuruan :</b> {formatted_date}"
+            footer = Paragraph(footer_text, footer_style)
+            w, h = footer.wrap(doc.width, doc.bottomMargin)
+            footer.drawOn(canvas, doc.leftMargin, 0.5*cm)  # Posisi di margin bawah, rata kiri
+            canvas.restoreState()
 
         # ===================== STRUCTURED TABLE LAYOUT =====================
 
@@ -575,49 +607,49 @@ class HrPayslip(models.Model):
         # 1. HEADER UTAMA (GROUP HEADERS)
         header_row1 = []
         header_row1.append(Paragraph("INFORMASI KARYAWAN",
-                                    ParagraphStyle(name='GroupHeader', fontSize=5,
+                                    ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                 alignment=TA_CENTER,
                                                 backColor=group_colors['info'])))
-        header_row1.extend([''] * 9)  # 10 kolom info karyawan (tanpa Tgl Keluar)
+        header_row1.extend([''] * 7)  # 8 kolom info karyawan (tanpa Tgl Keluar, Dept, Gol)
         header_row1.append(Paragraph("GAJI POKOK",
-                                    ParagraphStyle(name='GroupHeader', fontSize=5,
+                                    ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                 alignment=TA_CENTER,
                                                 backColor=group_colors['pendapatan'])))
         if tunjangan_fields:
             header_row1.append(Paragraph("TUNJANGAN",
-                                        ParagraphStyle(name='GroupHeader', fontSize=5,
+                                        ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                     alignment=TA_CENTER,
                                                     backColor=group_colors['tunjangan'])))
             header_row1.extend([''] * (len(tunjangan_fields) - 1))
         if 'sub_gross' in selected_field_names:
             header_row1.append(Paragraph("SUBTOTAL PENDAPATAN",
-                                        ParagraphStyle(name='GroupHeader', fontSize=5,
+                                        ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                     alignment=TA_CENTER,
                                                     backColor=group_colors['pendapatan'])))
         if 't_pph21' in selected_field_names:
             header_row1.append(Paragraph("TUNJ. PAJAK",
-                                        ParagraphStyle(name='GroupHeader', fontSize=5,
+                                        ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                     alignment=TA_CENTER,
                                                     backColor=group_colors['pajak'])))
         if potongan_fields:
             header_row1.append(Paragraph("POTONGAN",
-                                        ParagraphStyle(name='GroupHeader', fontSize=5,
+                                        ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                     alignment=TA_CENTER,
                                                     backColor=group_colors['potongan'])))
             header_row1.extend([''] * (len(potongan_fields) - 1))
         if 'p_pph21' in selected_field_names:
             header_row1.append(Paragraph("PAJAK",
-                                        ParagraphStyle(name='GroupHeader', fontSize=5,
+                                        ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                     alignment=TA_CENTER,
                                                     backColor=group_colors['pajak'])))
         if 'p_potongan' in selected_field_names:
             header_row1.append(Paragraph("TOTAL POTONGAN",
-                                        ParagraphStyle(name='GroupHeader', fontSize=5,
+                                        ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                     alignment=TA_CENTER,
                                                     backColor=group_colors['total'])))
         if 'net_wage' in selected_field_names:
             header_row1.append(Paragraph("GAJI BERSIH",
-                                        ParagraphStyle(name='GroupHeader', fontSize=5,
+                                        ParagraphStyle(name='GroupHeader', fontSize=4.5,
                                                     alignment=TA_CENTER,
                                                     backColor=group_colors['total'])))
         data.append(header_row1)
@@ -625,8 +657,8 @@ class HrPayslip(models.Model):
         # 2. SUB-HEADER (KOLOM DETAIL)
         header_row2 = []
         info_headers = [
-            "No", "Nama", "NO Karyawan", "Posisi", "Dept",
-            "Gol", "Status", "Tgl Masuk", "Lama Kerja", "PTKP"
+            "No", "Nama", "NO Karyawan", "Posisi",
+            "Status", "Tgl Masuk", "Lama Kerja", "PTKP"
         ]
         for h in info_headers:
             header_row2.append(Paragraph(h, header_style))
@@ -655,7 +687,6 @@ class HrPayslip(models.Model):
         is_non_staff = False
         for payslip in self:
             barcode = payslip.employee_id.barcode or "-"
-            department_name = payslip.employee_id.department_id.name.split(" / ")[-1] if payslip.employee_id.department_id.name else "-"
             job_name = payslip.employee_id.job_id.name or "-"
             tipe_karyawan = (payslip.employee_type or "-").title()
             if tipe_karyawan.lower() != 'staff':
@@ -677,8 +708,6 @@ class HrPayslip(models.Model):
                 Paragraph(payslip.employee_id.name, wrap_style),
                 Paragraph(barcode, wrap_style),
                 Paragraph(job_name, wrap_style),
-                Paragraph(department_name, wrap_style),
-                Paragraph(tipe_karyawan, wrap_style),
                 Paragraph(contract_type, wrap_style),
                 Paragraph(tanggal_bergabung, wrap_style),
                 Paragraph(lama_kerja, wrap_style),
@@ -715,14 +744,12 @@ class HrPayslip(models.Model):
             0.4*cm,  # No
             1.0*cm,  # Nama
             1.2*cm,  # NO Karyawan
-            1.5*cm,  # Posisi
-            1.0*cm,  # Dept
-            0.8*cm,  # Gol
-            1.0*cm,  # Status
-            1.2*cm,  # Tgl Masuk
+            1.3*cm,  # Posisi
+            1.05*cm,  # Status
+            1.1*cm,  # Tgl Masuk
             0.9*cm,  # Lama Kerja
-            0.8*cm,  # PTKP
-            1.1*cm,  # Gaji Pokok
+            0.65*cm,  # PTKP
+            1.05*cm,  # Gaji Pokok
             *[0.95*cm for _ in tunjangan_fields],  # Tunjangan
             *[1.1*cm for _ in range(2 if 'sub_gross' in selected_field_names and 't_pph21' in selected_field_names else 1 if 'sub_gross' in selected_field_names or 't_pph21' in selected_field_names else 0)],  # Subtotal Pendapatan & Tunj. Pajak
             *[0.95*cm for _ in potongan_fields],  # Potongan
@@ -731,15 +758,15 @@ class HrPayslip(models.Model):
 
         # 6. DEFINISI table_style
         base_table_style = [
-            ('SPAN', (0, 0), (9, 0)),  # Informasi Karyawan (10 kolom)
-            ('SPAN', (10, 0), (10, 0)),  # Gaji Pokok
-            ('BACKGROUND', (0, 0), (9, 0), group_colors['info']),
-            ('BACKGROUND', (10, 0), (10, 0), group_colors['pendapatan']),
-            ('BACKGROUND', (0, 1), (9, 1), colors.lightgrey),
-            ('BACKGROUND', (10, 1), (10, 1), colors.lightgrey),
+            ('SPAN', (0, 0), (7, 0)),  # Informasi Karyawan (8 kolom)
+            ('SPAN', (8, 0), (8, 0)),  # Gaji Pokok
+            ('BACKGROUND', (0, 0), (7, 0), group_colors['info']),
+            ('BACKGROUND', (8, 0), (8, 0), group_colors['pendapatan']),
+            ('BACKGROUND', (0, 1), (7, 1), colors.lightgrey),
+            ('BACKGROUND', (8, 1), (8, 1), colors.lightgrey),
             ('BOX', (0, 0), (-1, -1), 0.5, colors.black),
             ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
-            ('ALIGN', (10, 2), (-1, -1), 'RIGHT'),
+            ('ALIGN', (8, 2), (-1, -1), 'RIGHT'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, -1), 6),
@@ -751,7 +778,7 @@ class HrPayslip(models.Model):
         ]
 
         # Tambahkan span dan background untuk kolom dinamis
-        col_index = 11
+        col_index = 9
         if tunjangan_fields:
             base_table_style.append(('SPAN', (col_index, 0), (col_index + len(tunjangan_fields) - 1, 0)))
             base_table_style.append(('BACKGROUND', (col_index, 0), (col_index + len(tunjangan_fields) - 1, 0), group_colors['tunjangan']))
@@ -790,7 +817,7 @@ class HrPayslip(models.Model):
 
         # 7. ESTIMASI TINGGI KONTEN UNTUK MENENTUKAN SATU HALAMAN
         page_height = 1162  # 410 mm * 2.8346 poin/mm
-        title_height = 28  # 2 baris (font 7, leading 7) + Spacer 0.5 cm
+        title_height = 28  # 2 baris (font 7, leading 7 untuk judul, font 5, leading 5 untuk periode) + Spacer 0.5 cm
         row_height = 9  # Font 5, leading 7, padding 1+1
         signature_height = 120 if is_non_staff else 110  # Adjust for three or two signatures
         table_height = (len(payslip_data) + 3) * row_height
@@ -804,7 +831,7 @@ class HrPayslip(models.Model):
             single_table_data.extend(payslip_data)
             single_table_data.append(total_row)
             table_style = base_table_style + [
-                ('SPAN', (0, len(single_table_data)-1), (9, len(single_table_data)-1)),
+                ('SPAN', (0, len(single_table_data)-1), (7, len(single_table_data)-1)),
                 ('BACKGROUND', (0, len(single_table_data)-1), (-1, len(single_table_data)-1), group_colors['total']),
                 ('FONTNAME', (0, len(single_table_data)-1), (-1, len(single_table_data)-1), 'Helvetica-Bold'),
                 ('TEXTCOLOR', (0, len(single_table_data)-1), (-1, len(single_table_data)-1), colors.black),
@@ -824,7 +851,7 @@ class HrPayslip(models.Model):
                     table_data.extend(payslip_data[data_index:data_index + remaining_data])
                     table_data.append(total_row)
                     table_style = base_table_style + [
-                        ('SPAN', (0, len(table_data)-1), (9, len(table_data)-1)),
+                        ('SPAN', (0, len(table_data)-1), (7, len(table_data)-1)),
                         ('BACKGROUND', (0, len(table_data)-1), (-1, len(table_data)-1), group_colors['total']),
                         ('FONTNAME', (0, len(table_data)-1), (-1, len(table_data)-1), 'Helvetica-Bold'),
                         ('TEXTCOLOR', (0, len(table_data)-1), (-1, len(table_data)-1), colors.black),
@@ -924,7 +951,7 @@ class HrPayslip(models.Model):
             signature_frame = KeepTogether([
                 Spacer(1, 0.5*cm),
                 signature_table,
-                Spacer(1, 2*cm)
+                Spacer(1, 1*cm)  # Spacer untuk ruang footer
             ])
         else:
             signature_data = [
@@ -978,12 +1005,12 @@ class HrPayslip(models.Model):
             signature_frame = KeepTogether([
                 Spacer(1, 0.5*cm),
                 signature_table,
-                Spacer(1, 2*cm)
+                Spacer(1, 1*cm)  # Spacer untuk ruang footer
             ])
         elements.append(signature_frame)
 
         # Build PDF
-        doc.build(elements)
+        doc.build(elements, onFirstPage=add_footer, onLaterPages=add_footer)
         pdf_value = buffer.getvalue()
         buffer.close()
 
