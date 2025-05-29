@@ -53,31 +53,21 @@ class BarcodeProduksiSubkode(models.Model):
 
             total_inner_width = STICKER_WIDTH - 2 * MARGIN
 
-            # First table (header)
-            header_height = 1.0 * cm  # Reduced from 1.3 to 1.0
-            header_table_y = STICKER_HEIGHT - MARGIN
-
-            p.setStrokeColor(colors.black)
-            p.setLineWidth(1)
-
-            # Draw first table outer rectangle
-            p.rect(MARGIN, header_table_y - header_height, total_inner_width, header_height, stroke=1, fill=0)
-
             # Columns widths for first table
             col1_width = total_inner_width * 0.25
             col2_width = total_inner_width * 0.50
             col3_width = total_inner_width * 0.25
 
-            # Vertical lines for first table columns
-            p.line(MARGIN + col1_width, header_table_y, MARGIN + col1_width, header_table_y - header_height)
-            p.line(MARGIN + col1_width + col2_width, header_table_y, MARGIN + col1_width + col2_width, header_table_y - header_height)
+            # First table (header)
+            header_height = 1.5 * cm  # Adjusted height for image
+            header_table_y = STICKER_HEIGHT - MARGIN
 
             # Draw logo in column 1 first table (scaled within cell size)
             if logo_img:
                 logo_width, logo_height = logo_img.getSize()
                 max_cell_width = col1_width
                 max_cell_height = header_height
-                desired_height = max_cell_height * 0.9
+                desired_height = max_cell_height  # Use full height without padding
                 scale = desired_height / logo_height
                 desired_width = logo_width * scale
                 if desired_width > max_cell_width * 0.9:
@@ -91,12 +81,24 @@ class BarcodeProduksiSubkode(models.Model):
                 p.setFont("Helvetica-Bold", medium_font)
                 p.drawString(MARGIN + 0.2 * cm, header_table_y - 0.5 * cm, "OM")
 
-            # Draw "4444" centered in column 2 of first table
-            p.setFont("Helvetica-Bold", medium_font)
-            p.drawCentredString(MARGIN + col1_width + col2_width / 2, header_table_y - header_height / 2, "4444")
+            p.setStrokeColor(colors.black)
+            p.setLineWidth(1)
 
-            # Draw formatted date right aligned in column 3 of first table
-            p.drawRightString(MARGIN + col1_width + col2_width + col3_width - 0.2 * cm, header_table_y - header_height / 2, month_year_str)
+            # Draw first table outer rectangle
+            p.rect(MARGIN, header_table_y - header_height, total_inner_width, header_height, stroke=1, fill=0)
+
+            # Vertical lines for first table columns
+            p.line(MARGIN + col1_width, header_table_y, MARGIN + col1_width, header_table_y - header_height)
+            p.line(MARGIN + col1_width + col2_width, header_table_y, MARGIN + col1_width + col2_width, header_table_y - header_height)
+
+            # Draw "4444" centered in column 2 of first table
+            p.setFont("Helvetica-Bold", medium_font + 6)
+            # Adjust vertical position for better centering by subtracting 2 points
+            p.drawCentredString(MARGIN + col1_width + col2_width / 2, header_table_y - header_height / 2 - 2, "4444")
+
+            # Draw formatted date centered in column 3 of first table
+            p.setFont("Helvetica-Bold", medium_font + 6)
+            p.drawCentredString(MARGIN + col1_width + col2_width + col3_width / 2, header_table_y - header_height / 2 - 2, month_year_str)
 
             # Second table below with gap, no outermost border removed
             second_table_height = 2.0 * cm  # Doubled the height (2x the header height)
@@ -157,15 +159,54 @@ class BarcodeProduksiSubkode(models.Model):
             p.drawString(MARGIN, third_row_y, third_row_text)
 
             # Tambahkan baris keempat dengan dua kolom utama
-            fourth_row_gap = 0.4 * cm
+            fourth_row_gap = 0.8 * cm  # Increased top margin between row 3 and row 4
             fourth_row_y = third_row_y - medium_font - fourth_row_gap
-            fourth_row_height = medium_font * 6  # Tinggi untuk 4 baris
-            
+            fourth_row_height = (medium_font - 1) * 3 * 2  # Adjusted height to fit larger MAPH text without overflow
+
+            # Draw outer rectangle for fourth row table with top margin
+            top_margin = 0.2 * cm
+
             # Hitung lebar kolom utama (masing-masing 50%)
             main_col_width = (STICKER_WIDTH - 2 * MARGIN) / 2
             
             # Baris pertama kolom kiri dibagi menjadi dua sub-kolom
             sub_col_width = main_col_width / 2
+
+            # Removed outer rectangle for fourth row table
+            # p.rect(MARGIN, fourth_row_y - fourth_row_height - top_margin, STICKER_WIDTH - 2 * MARGIN, fourth_row_height, stroke=1, fill=0)
+
+            # Draw vertical lines for main columns in fourth row
+            # Removed vertical line for main columns in fourth row
+            # p.line(MARGIN + main_col_width, fourth_row_y, MARGIN + main_col_width, fourth_row_y - fourth_row_height - top_margin)
+
+            # Draw vertical line for sub-columns in left main column
+            # Removed vertical line for sub-columns in left main column
+            # p.line(MARGIN + sub_col_width, fourth_row_y, MARGIN + sub_col_width, fourth_row_y - fourth_row_height - top_margin)
+
+            # Additional removal: Remove stroke color and line width settings that might affect borders
+            p.setStrokeColorRGB(1, 1, 1)  # Set stroke color to white to hide any remaining borders
+            p.setLineWidth(0)
+
+            # Restore stroke color and line width before drawing fifth row
+            p.setStrokeColorRGB(0, 0, 0)  # Set stroke color back to black
+            p.setLineWidth(1)
+
+            # Draw horizontal lines for full border in fourth row
+            # Top horizontal line (already drawn by rectangle)
+            # Draw horizontal line below "Order Date" and "Due Date" labels
+            line1_y = fourth_row_y - medium_font
+            # Removed this line to remove border between date and due date
+            # p.line(MARGIN, line1_y, MARGIN + STICKER_WIDTH - 2 * MARGIN, line1_y)
+
+            # Draw horizontal line below dates and partner name (approximate)
+            line2_y = fourth_row_y - medium_font * 3.5
+            # Removed this line to remove border below partner_name
+            # p.line(MARGIN, line2_y, MARGIN + STICKER_WIDTH - 2 * MARGIN, line2_y)
+
+            # Draw horizontal line below MAPH text (approximate)
+            line3_y = line2_y - (medium_font - 1) * 3 * 2
+            # Removed this line to remove border below partner_name
+            # p.line(MARGIN, line3_y, MARGIN + STICKER_WIDTH - 2 * MARGIN, line3_y)
             
             # Bagian Tanggal Order
             p.setFont("Helvetica-Bold", medium_font - 1)
@@ -194,24 +235,30 @@ class BarcodeProduksiSubkode(models.Model):
             p.drawString(MARGIN + sub_col_width + 0.2 * cm, fourth_row_y - medium_font * 2.2, formatted_due_date)
 
             # Draw partner name first
-            partner_row_y = fourth_row_y - medium_font * 3.5  # Adjust spacing based on medium_font only
+            partner_row_y = fourth_row_y - medium_font * 4  # Reduced top margin for partner_name above MAPH
+
+            # Add MAPH text below partner name (bold dan underline)
+            maph_y = partner_row_y - medium_font * 3  # Increased top margin for MAPH text below partner name
+
+            # Add FRE and USA text in two columns below MAPH
+            fre_usa_y = maph_y - medium_font * 3  # Increased top margin for FRE and USA text
             p.setFont("Helvetica", medium_font - 1)
             p.drawString(MARGIN + 0.2 * cm, partner_row_y, partner_name)
             
             # Add MAPH text below partner name (bold dan underline)
-            maph_y = partner_row_y - medium_font * 1.5  # Position below partner name
-            p.setFont("Helvetica-Bold", medium_font - 1)
+            maph_y = partner_row_y - medium_font * 3  # Increased top margin for MAPH text below partner name
+            p.setFont("Helvetica-Bold", (medium_font - 1) * 3)
             maph_text = "MAPH"
             maph_x = MARGIN + 0.2 * cm
             p.drawString(maph_x, maph_y, maph_text)
             
             # Draw underline for MAPH text
-            text_width = p.stringWidth(maph_text, "Helvetica-Bold", medium_font - 1)
+            text_width = p.stringWidth(maph_text, "Helvetica-Bold", (medium_font - 1) * 3)
             p.line(maph_x, maph_y - 1, maph_x + text_width, maph_y - 1)
             
             # Add FRE and USA text in two columns below MAPH
             fre_usa_y = maph_y - medium_font * 1.5  # Position below MAPH
-            p.setFont("Helvetica", medium_font - 1)
+            p.setFont("Helvetica", medium_font + 1)
             
             # Calculate column widths and positions
             col_width = main_col_width / 2
@@ -221,7 +268,7 @@ class BarcodeProduksiSubkode(models.Model):
             
             # Draw USA in second column right aligned
             usa_text = "USA"
-            usa_x = MARGIN + col_width * 2 - p.stringWidth(usa_text, "Helvetica", medium_font - 1) - 0.2 * cm
+            usa_x = MARGIN + col_width * 2 - p.stringWidth(usa_text, "Helvetica", medium_font + 1) - 0.2 * cm
             p.drawString(usa_x, fre_usa_y, usa_text)
             
             # Add fifth row with 85% and 15% width columns
@@ -360,13 +407,6 @@ class BarcodeProduksiSubkode(models.Model):
                 qr_y = sixth_row_y - row_height + (row_height - qr_size) / 2 - medium_font
                 p.drawImage(tmp.name, qr_x, qr_y, width=qr_size, height=qr_size)
 
-            # Tambahkan label untuk kolom utama
-            p.setFont("Helvetica-Bold", medium_font - 1)
-            p.drawString(MARGIN + main_col_width / 2 - p.stringWidth("INFORMASI ORDER", "Helvetica-Bold", medium_font - 1) / 2, 
-                        fourth_row_y + 0.1 * cm, "INFORMASI ORDER")
-            p.drawString(MARGIN + main_col_width + main_col_width / 2 - p.stringWidth("INFORMASI PENGIRIMAN", "Helvetica-Bold", medium_font - 1) / 2,
-                        fourth_row_y + 0.1 * cm, "INFORMASI PENGIRIMAN")
-
             p.showPage()
 
         p.save()
@@ -389,4 +429,3 @@ class BarcodeProduksiSubkode(models.Model):
             'url': f'/web/content/{attachment.id}?download=false',
             'target': 'new',
         }
-
