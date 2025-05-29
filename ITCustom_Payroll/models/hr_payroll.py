@@ -7,6 +7,7 @@ class HrPayslip(models.Model):
     barcode = fields.Char(related="employee_id.barcode", string="Nomor Karyawan", store=True)
     employee_type = fields.Selection(related="employee_id.employee_type", string="Tipe Karyawan", store=True)
     bank_name = fields.Char(related="employee_id.bank_account_id.bank_id.name", string="Nama Bank", store=True)
+    efektif = fields.Monetary(string="Efektif Kerja", compute="_compute_efektif", store=True, currency_field='currency_id')
     t_alrapel = fields.Monetary(string="(T) Alrapel", compute="_compute_alrapel", store=True, currency_field='currency_id')
     t_makan = fields.Monetary(string="(T) Makan", compute="_compute_t_makan", store=True, currency_field='currency_id')
     t_jkk = fields.Monetary(string="(T) JKK", compute="_compute_t_jkk", store=True, currency_field='currency_id')
@@ -40,6 +41,15 @@ class HrPayslip(models.Model):
     p_potongan = fields.Monetary(string="Total Potongan", compute="_compute_potongan", store=True, currency_field='currency_id')
 
     
+    @api.depends('line_ids.total')
+    def _compute_efektif(self):
+        for record in self:
+            payslip_line = self.env['hr.payslip.line'].search([
+                ('slip_id', '=', record.id),
+                ('code', '=', 'EFEKTIF')
+            ], limit=1)
+            record.efektif = payslip_line.total if payslip_line else 0.0
+            
     @api.depends('line_ids.total')
     def _compute_alrapel(self):
         for record in self:

@@ -17,6 +17,7 @@
             </xpath>
             <!-- Tambahkan field setelah basic_wage -->
             <xpath expr="//field[@name='basic_wage']" position="after">
+                <field optional="show" name="efektif" widget="integer"/>
                 <field optional="show" name="t_alrapel" widget="integer"/>
                 <field optional="show" name="t_makan"  widget="integer"/>
                 <field optional="show" name="t_jkk"  widget="integer"/>
