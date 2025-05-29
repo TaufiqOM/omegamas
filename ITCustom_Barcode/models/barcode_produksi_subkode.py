@@ -94,10 +94,19 @@ class BarcodeProduksiSubkode(models.Model):
             # Draw "4444" centered in column 2 of first table
             p.setFont("Helvetica-Bold", medium_font + 6)
             # Adjust vertical position for better centering by subtracting 2 points
-            p.drawCentredString(MARGIN + col1_width + col2_width / 2, header_table_y - header_height / 2 - 2, "4444")
+            default_code = rec.produk_id.default_code if rec.produk_id else "NoCode"
+            p.drawCentredString(MARGIN + col1_width + col2_width / 2, header_table_y - header_height / 2 - 2, default_code)
 
             # Draw formatted date centered in column 3 of first table
             p.setFont("Helvetica-Bold", medium_font + 6)
+            # Add space between month and year in month_year_str
+            if rec.create_date:
+                dt = rec.create_date
+                if isinstance(dt, str):
+                    dt = datetime.datetime.strptime(dt, "%Y-%m-%d").date()
+                month_year_str = dt.strftime('%b')[0:3] + " " + dt.strftime('%y')
+            else:
+                month_year_str = "NoDate"
             p.drawCentredString(MARGIN + col1_width + col2_width + col3_width / 2, header_table_y - header_height / 2 - 2, month_year_str)
 
             # Second table below with gap, no outermost border removed
@@ -119,7 +128,8 @@ class BarcodeProduksiSubkode(models.Model):
             p.setFont("Helvetica", medium_font)
             text_x = MARGIN + 0.2 * cm
             text_y = second_table_y - medium_font * 1.2  # Position from top like QR Order text
-            p.drawString(text_x, text_y, "lorem 10")
+            client_order_ref = rec.order_id.client_order_ref if rec.order_id else "No Client Order Ref"
+            p.drawString(text_x, text_y, client_order_ref)
 
             # Calculate available height in second table
             available_height = second_table_height - (2 * medium_font)  # Reserve space for text above and below
@@ -133,8 +143,8 @@ class BarcodeProduksiSubkode(models.Model):
 
             p.drawString(qr_text_x, qr_text_y, qr_text)
 
-            # Generate QR code for second column
-            qr = qrcode.make(rec.name or "NoCode", border=0)
+            # Generate QR code for second column from client_order_ref
+            qr = qrcode.make(client_order_ref or "NoCode", border=0)
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 qr.save(tmp.name)
                 qr_size = min(available_height * 0.7, second_col2_width * 0.7)  # Size constrained by height and width
@@ -142,9 +152,9 @@ class BarcodeProduksiSubkode(models.Model):
                 qr_y = second_table_y - medium_font * 2 - qr_size  # Position below "QR Order" text
                 p.drawImage(tmp.name, qr_x, qr_y, width=qr_size, height=qr_size)
 
-            # Add partner_id text below QR code
+            # Add partner_id text below QR code from client_order_ref
             p.setFont("Helvetica", medium_font - 1)
-            partner_name = rec.order_id.partner_id.name if rec.order_id and rec.order_id.partner_id else "No Partner"
+            partner_name = client_order_ref
             partner_text_width = p.stringWidth(partner_name, "Helvetica", medium_font - 1)
             partner_text_x = MARGIN + second_col1_width + (second_col2_width - partner_text_width) / 2
             partner_text_y = qr_y - medium_font * 1.2  # Position below QR code
@@ -242,13 +252,16 @@ class BarcodeProduksiSubkode(models.Model):
 
             # Add FRE and USA text in two columns below MAPH
             fre_usa_y = maph_y - medium_font * 3  # Increased top margin for FRE and USA text
-            p.setFont("Helvetica", medium_font - 1)
-            p.drawString(MARGIN + 0.2 * cm, partner_row_y, partner_name)
+            p.setFont("Helvetica", medium_font + 1)
+            # Replace partner_name with client_order_ref for partner_name below due date and order date
+            partner_name_below = rec.order_id.client_order_ref if rec.order_id else "No Client Order Ref"
+            p.drawString(MARGIN + 0.2 * cm, partner_row_y, partner_name_below)
             
             # Add MAPH text below partner name (bold dan underline)
             maph_y = partner_row_y - medium_font * 3  # Increased top margin for MAPH text below partner name
             p.setFont("Helvetica-Bold", (medium_font - 1) * 3)
-            maph_text = "MAPH"
+            # Replace MAPH text with company_registry from partner
+            maph_text = rec.order_id.partner_id.company_registry if rec.order_id and rec.order_id.partner_id else "No Company Registry"
             maph_x = MARGIN + 0.2 * cm
             p.drawString(maph_x, maph_y, maph_text)
             

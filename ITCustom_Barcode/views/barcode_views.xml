@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <list string="Subkode Barcode Produksi" default_group_by="kode">
                 <header>
-                    <button name="action_generate_barcode_direct" string="Generate Barcode" type="object" class="btn-primary"/>
+                    <button name="action_generate_barcode_direct" string="Print Barcode" type="object" class="btn-primary"/>
                 </header>
                 <field name="kode"/>
                 <field name="name"/>
