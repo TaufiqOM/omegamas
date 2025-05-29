@@ -1,4 +1,3 @@
-# /Users/admin/Documents/odoo-18E/omegamas/ITCustom_Barcode/wizard/barcode_wizard.py
 from odoo import models, fields, api
 
 class BarcodeProduksiWizard(models.TransientModel):
@@ -15,10 +14,10 @@ class BarcodeProduksiWizard(models.TransientModel):
         lines = []
         for line in produksi.product_line_ids:
             lines.append((0, 0, {
-                'produksi_line_id': line.id,  # WAJIB DITAMBAHKAN
+                'produksi_line_id': line.id,
                 'product_template_id': line.product_template_id.id,
                 'product_uom_qty': line.product_uom_qty,
-                'jumlah_generate': 1,  # default 1
+                'jumlah_generate': 1,
             }))
         res.update({
             'produksi_id': produksi.id,
@@ -26,18 +25,26 @@ class BarcodeProduksiWizard(models.TransientModel):
         })
         return res
 
-
     def action_generate(self):
         for wizard in self:
-
-            # Ambil kode terakhir dari database, atau mulai dari 200000
-            last_kode = self.env['barcode.produksi.subkode'].search([], order='kode desc', limit=1).kode
-            try:
-                start_kode = int(last_kode) + 1 if last_kode else 200000
-            except (ValueError, TypeError):
-                start_kode = 200000
-
+            # Tidak mengambil sequence di awal, melainkan di dalam loop line_ids
             for line in wizard.line_ids:
+                # Ambil sequence baru untuk setiap produk
+                sequence = self.env['ir.sequence'].next_by_code('barcode.produksi.subkode')
+                if not sequence:
+                    # Jika sequence belum ada, buat sequence baru dengan kode awal 200000
+                    sequence_obj = self.env['ir.sequence'].create({
+                        'name': 'Barcode Produksi Subkode',
+                        'code': 'barcode.produksi.subkode',
+                        'prefix': '',
+                        'padding': 6,
+                        'number_increment': 1,
+                        'number_next_actual': 200000,
+                    })
+                    sequence = sequence_obj.next_by_code('barcode.produksi.subkode')
+
+                start_kode = int(sequence)  # Inisialisasi start_kode untuk produk ini
+
                 jumlah_generate = line.jumlah_generate
                 for i in range(jumlah_generate):
                     seq = f"{i + 1:04d}"
@@ -51,6 +58,3 @@ class BarcodeProduksiWizard(models.TransientModel):
                         'produksi_id': wizard.produksi_id.id,
                         'order_id': wizard.produksi_id.order_id.id,
                     })
-
-                start_kode += 1  # Naikkan untuk produk berikutnya
-
