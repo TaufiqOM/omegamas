@@ -101,7 +101,7 @@ class BarcodeProduksiSubkode(models.Model):
             p.drawCentredString(MARGIN + col1_width + col2_width + col3_width / 2, header_table_y - header_height / 2 - 2, month_year_str)
 
             # Second table below with gap, no outermost border removed
-            second_table_height = 2.0 * cm  # Doubled the height (2x the header height)
+            second_table_height = 2.5 * cm  # Doubled the height (2x the header height)
             gap_between_tables = 0.2 * cm
             second_table_y = header_table_y - header_height - gap_between_tables
 
@@ -134,10 +134,10 @@ class BarcodeProduksiSubkode(models.Model):
             p.drawString(qr_text_x, qr_text_y, qr_text)
 
             # Generate QR code for second column
-            qr = qrcode.make(rec.name or "NoCode")
+            qr = qrcode.make(rec.name or "NoCode", border=0)
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 qr.save(tmp.name)
-                qr_size = min(available_height * 0.6, second_col2_width * 0.8)  # Size constrained by height and width
+                qr_size = min(available_height * 0.7, second_col2_width * 0.7)  # Size constrained by height and width
                 qr_x = MARGIN + second_col1_width + (second_col2_width - qr_size) / 2
                 qr_y = second_table_y - medium_font * 2 - qr_size  # Position below "QR Order" text
                 p.drawImage(tmp.name, qr_x, qr_y, width=qr_size, height=qr_size)
@@ -209,10 +209,10 @@ class BarcodeProduksiSubkode(models.Model):
             # p.line(MARGIN, line3_y, MARGIN + STICKER_WIDTH - 2 * MARGIN, line3_y)
             
             # Bagian Tanggal Order
-            p.setFont("Helvetica-Bold", medium_font - 1)
+            p.setFont("Helvetica", medium_font)
             p.drawString(MARGIN + 0.2 * cm, fourth_row_y - medium_font, "Order Date")
             
-            p.setFont("Helvetica", medium_font - 1)
+            p.setFont("Helvetica-Bold", medium_font + 1)
             order_date = rec.order_id.blanket_order_id.date_create_blanket_order if rec.order_id and rec.order_id.blanket_order_id else "-"
             if isinstance(order_date, str):
                 formatted_order_date = order_date
@@ -222,10 +222,10 @@ class BarcodeProduksiSubkode(models.Model):
             p.drawString(MARGIN + 0.2 * cm, fourth_row_y - medium_font * 2.2, formatted_order_date)
 
             # Bagian Tanggal Jatuh Tempo
-            p.setFont("Helvetica-Bold", medium_font - 1)
+            p.setFont("Helvetica", medium_font)
             p.drawString(MARGIN + sub_col_width + 0.2 * cm, fourth_row_y - medium_font, "Due Date")
             
-            p.setFont("Helvetica", medium_font - 1)
+            p.setFont("Helvetica-Bold", medium_font + 1)
             due_date = rec.order_id.due_date_order if rec.order_id else "-"
             if isinstance(due_date, str):
                 formatted_due_date = due_date
@@ -350,7 +350,7 @@ class BarcodeProduksiSubkode(models.Model):
             p.drawString(text_x, text_y, qr_text)
             
             # Left QR code (centered)
-            qr = qrcode.make(rec.name or "NoCode")
+            qr = qrcode.make(rec.name or "NoCode", border=2)
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 qr.save(tmp.name)
                 qr_x = MARGIN + (col1_width - qr_size) / 2
@@ -366,11 +366,11 @@ class BarcodeProduksiSubkode(models.Model):
             header_text = "No Item"
             header_width = p.stringWidth(header_text, "Helvetica-Bold", medium_font - 1)
             header_x = MARGIN + col1_width + (col2_width - header_width) / 2
-            header_y = start_y - medium_font * 0.5  # Increased spacing from name
+            header_y = start_y - medium_font * 0.3  # Increased spacing from name
             p.drawString(header_x, header_y, header_text)
             
             # Name text (larger and bold, centered)
-            name_font_size = medium_font + 2  # Increased font size
+            name_font_size = medium_font + 5  # Increased font size
             p.setFont("Helvetica-Bold", name_font_size)
             name_text = rec.name or "NoCode"
             name_width = p.stringWidth(name_text, "Helvetica-Bold", name_font_size)
@@ -400,7 +400,7 @@ class BarcodeProduksiSubkode(models.Model):
             p.drawString(text_x, text_y, qr_text)
             
             # Right QR code
-            qr = qrcode.make(rec.name or "NoCode")
+            qr = qrcode.make(rec.name or "NoCode", border=2)
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                 qr.save(tmp.name)
                 qr_x = MARGIN + col1_width + col2_width + (col3_width - qr_size) / 2
