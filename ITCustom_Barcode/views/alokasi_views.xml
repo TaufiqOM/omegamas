@@ -4,7 +4,7 @@
         <field name="name">barcode.produksi.tree</field>
         <field name="model">barcode.produksi</field>
         <field name="arch" type="xml">
-            <list>
+            <list string="Barcode Produksi">
                 <field name="order_id"/>
             </list>
         </field>

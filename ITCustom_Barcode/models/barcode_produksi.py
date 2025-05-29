@@ -3,6 +3,7 @@ import base64
 from io import BytesIO
 import qrcode
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 class BarcodeProduksi(models.Model):
     _name = 'barcode.produksi'
@@ -12,9 +13,13 @@ class BarcodeProduksi(models.Model):
     order_id = fields.Many2one(
         'sale.order',
         string='Nomor Penjualan',
-        domain="[('state', '=', 'sale')]",
+        domain=lambda self: [('state', '=', 'sale'), ('id', 'not in', self._get_used_order_ids())],
         required=True
     )
+
+    def _get_used_order_ids(self):
+        used_order_ids = self.search([]).mapped('order_id').ids
+        return used_order_ids
     product_line_ids = fields.One2many(
         'barcode.produksi.line', 
         'produksi_id', 
@@ -26,7 +31,14 @@ class BarcodeProduksi(models.Model):
     barcode_image = fields.Binary("Barcode", store=True)
     subkode_ids = fields.One2many('barcode.produksi.subkode', 'produksi_id', string="Sub Kode")
     
-
+    @api.constrains('order_id')
+    def _check_unique_order_id(self):
+        for record in self:
+            if record.order_id:
+                existing = self.search([('order_id', '=', record.order_id.id), ('id', '!=', record.id)])
+                if existing:
+                    raise ValidationError("Barcode dengan Kode SO yang sama sudah dibuat.")
+    
     def open_generate_wizard(self):
         return {
             'type': 'ir.actions.act_window',
